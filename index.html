@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG Dissertation Management System</title>
+  <style>
+    :root { --bg:#0f172a; --bg-soft:#111c35; --card:#1e293b; --card-2:#243247; --text:#e2e8f0; --muted:#94a3b8; --primary:#3b82f6; --primary-hover:#2563eb; --border:#334155; --pending:#f59e0b; --review:#38bdf8; --revision:#fb7185; --approved:#22c55e; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, Arial, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    .app-bg { position:fixed; inset:0; background:radial-gradient(circle at top right,#1d4ed8 0%,transparent 35%),radial-gradient(circle at bottom left,#0ea5e9 0%,transparent 20%); opacity:.2; pointer-events:none; }
+    .app-shell { position:relative; max-width:1150px; margin:0 auto; padding:30px 18px 50px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; gap:12px; }
+    .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .lang-group { display:flex; gap:8px; }
+    .lang-btn { padding:8px 10px; font-size:13px; }
+    .eyebrow { margin:0; color:var(--review); font-size:13px; text-transform:uppercase; letter-spacing:1px; }
+    h1 { margin:4px 0 0; font-size:30px; } h2,h3,h4,p { margin:0; }
+    .app-title-link {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+      font: inherit;
+    }
+    .app-title-link:hover {
+      color: #93c5fd;
+    }
+    .panel,.card { background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%); border:1px solid rgba(148,163,184,.12); border-radius:16px; box-shadow:0 12px 35px rgba(2,6,23,.45); }
+    .panel { max-width:520px; margin:0 auto; padding:26px; } .panel-title { margin-bottom:18px; }
+    .panel-title p,.muted { color:var(--muted); } .form-grid,.stack { display:grid; gap:12px; }
+    .actions-row { margin-top:10px; display:flex; gap:10px; }
+    label { display:grid; gap:8px; color:#cbd5e1; font-size:14px; }
+    input,select,textarea { width:100%; background:var(--bg-soft); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:11px 12px; outline:none; }
+    input:focus,select:focus,textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(59,130,246,.2); }
+    .btn { border:none; border-radius:10px; padding:11px 14px; font-weight:600; cursor:pointer; transition:.25s ease; }
+    .btn-primary { background:var(--primary); color:#fff; } .btn-primary:hover { background:var(--primary-hover); transform:translateY(-1px); }
+    .btn-ghost { background:transparent; color:#cbd5e1; border:1px solid var(--border); } .btn-ghost:hover { background:#334155; }
+    .grid.two-cols { display:grid; gap:16px; grid-template-columns:1.1fr .9fr; } .card { padding:20px; }
+    .card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; } .card-head.split { align-items:end; }
+    .badge { background:rgba(56,189,248,.15); color:#7dd3fc; border:1px solid rgba(56,189,248,.35); font-size:12px; padding:4px 10px; border-radius:999px; }
+    .stats .stat-grid { display:grid; gap:12px; grid-template-columns:repeat(2,1fr); }
+    .stats .stat-grid div { background:#0f1b34; border:1px solid var(--border); padding:14px; border-radius:12px; }
+    .stats .stat-grid p { color:var(--muted); font-size:13px; } .stats .stat-grid h4 { font-size:24px; margin-top:6px; }
+    .table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; min-width:780px; }
+    th,td { text-align:left; padding:12px; border-bottom:1px solid var(--border); vertical-align:top; } thead th { color:#93c5fd; font-size:13px; }
+    tbody tr:hover { background:rgba(51,65,85,.45); } .status { font-weight:700; }
+    .pending { color:var(--pending); } .under-review { color:var(--review); } .needs-revision { color:var(--revision); } .approved { color:var(--approved); }
+    .actions { display:grid; gap:8px; min-width:220px; } .actions textarea { min-height:76px; resize:vertical; }
+    .small { padding:8px 10px; font-size:13px; } .mt { margin-top:16px; }
+    .readonly-note { margin-top:10px; border:1px solid rgba(251,113,133,.5); background:rgba(251,113,133,.15); color:#fecdd3; border-radius:10px; padding:10px 12px; font-size:13px; }
+    .toast { position:fixed; right:18px; bottom:18px; padding:12px 14px; background:#0b1221; border:1px solid #1d4ed8; border-radius:10px; color:#bfdbfe; box-shadow:0 10px 30px rgba(2,6,23,.5); z-index:99; }
+    .footer-link {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      padding: 0;
+      text-decoration: underline;
+      text-decoration-color: rgba(148,163,184,.6);
+      text-underline-offset: 3px;
+    }
+    .footer-link:hover {
+      color: #93c5fd;
+      text-decoration-color: #93c5fd;
+    }
+    .hidden { display:none !important; }
+    @media (max-width:940px) { .grid.two-cols { grid-template-columns:1fr; } h1 { font-size:25px; } .actions-row { flex-direction:column; } }
+  </style>
+</head>
+<body>
+  <div class="app-bg"></div>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="t_eyebrow">Postgraduate Portal</p>
+        <button id="homeBtn" class="app-title-link" type="button">
+          <h1 id="t_appTitle">Dissertation System</h1>
+        </button>
+      </div>
+      <div class="topbar-right">
+        <div class="lang-group" role="group" aria-label="Language switcher">
+          <button id="langEN" class="btn btn-ghost lang-btn" type="button">English</button>
+          <button id="langAR" class="btn btn-ghost lang-btn" type="button">العربية</button>
+          <button id="langTA" class="btn btn-ghost lang-btn" type="button">தமிழ்</button>
+        </div>
+        <button id="logoutBtn" class="btn btn-ghost hidden">Logout</button>
+      </div>
+    </header>
+
+    <section id="toast" class="toast hidden"></section>
+
+    <section id="loginView" class="panel">
+      <div class="panel-title">
+        <h2 id="t_loginTitle">Login</h2>
+        <p id="t_loginSubtitle">Use any username/password and choose role.</p>
+      </div>
+      <form id="loginForm" class="form-grid">
+        <label><span id="t_roleLabel">Role</span>
+          <select id="role">
+            <option value="student" id="t_roleStudent">Student</option>
+            <option value="supervisor" id="t_roleSupervisor">Supervisor</option>
+          </select>
+        </label>
+        <label><span id="t_nameLabel">Name</span>
+          <input id="name" type="text" placeholder="Enter your name" required />
+        </label>
+        <label><span id="t_passwordLabel">Password</span>
+          <input id="password" type="password" placeholder="Enter password" required />
+        </label>
+        <button class="btn btn-primary" type="submit" id="t_loginBtn">Login</button>
+      </form>
+      <div class="actions-row">
+        <button id="guestBtn" class="btn btn-ghost" type="button">Skip as Guest</button>
+      </div>
+    </section>
+
+    <section id="studentView" class="hidden">
+      <div class="grid two-cols">
+        <article class="card">
+          <div class="card-head">
+            <h3 id="t_uploadTitle">Upload New Version</h3>
+            <span class="badge" id="studentBadge">Student</span>
+          </div>
+          <p class="muted" id="t_uploadSubtitle">Upload a new dissertation version. Status starts as Pending.</p>
+          <form id="uploadForm" class="stack">
+            <label><span id="t_fileLabel">Dissertation File</span>
+              <input id="fileName" type="text" placeholder="e.g. thesis_v2.pdf" required />
+            </label>
+            <button id="uploadBtn" class="btn btn-primary" type="submit">Upload</button>
+          </form>
+          <div id="guestReadOnly" class="readonly-note hidden">Guest mode is read-only. Login as student to upload new files.</div>
+        </article>
+
+        <article class="card stats">
+          <div class="card-head">
+            <h3 id="t_progressTitle">My Progress</h3>
+            <span class="badge" id="t_overviewBadge">Overview</span>
+          </div>
+          <div class="stat-grid">
+            <div><p id="t_totalLabel">Total</p><h4 id="totalCount">0</h4></div>
+            <div><p id="t_pendingLabel">Pending</p><h4 id="pendingCount">0</h4></div>
+            <div><p id="t_revisionLabel">Needs Revision</p><h4 id="revisionCount">0</h4></div>
+            <div><p id="t_approvedLabel">Approved</p><h4 id="approvedCount">0</h4></div>
+          </div>
+        </article>
+      </div>
+
+      <article class="card mt">
+        <div class="card-head">
+          <h3 id="t_mySubmissions">My Submissions</h3>
+          <span class="badge" id="t_versionsBadge">Versions</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th id="t_thFile">File</th>
+                <th id="t_thVersion">Version</th>
+                <th id="t_thStatus">Status</th>
+                <th id="t_thComment">Comment</th>
+                <th id="t_thUploadDate">Upload Date</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section id="supervisorView" class="hidden">
+      <article class="card">
+        <div class="card-head split">
+          <div>
+            <h3 id="t_allSubmissions">All Submissions</h3>
+            <p class="muted" id="t_allSubtitle">Review, comment, and update status.</p>
+          </div>
+          <div class="filter-wrap">
+            <label><span id="t_filterLabel">Filter</span>
+              <select id="statusFilter">
+                <option value="all" id="t_filterAll">All</option>
+                <option value="Pending" id="t_filterPending">Pending</option>
+                <option value="Under Review" id="t_filterUnderReview">Under Review</option>
+                <option value="Needs Revision" id="t_filterNeedsRevision">Needs Revision</option>
+                <option value="Approved" id="t_filterApproved">Approved</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th id="t_thStudent">Student</th>
+                <th id="t_thFile2">File</th>
+                <th id="t_thVersion2">Version</th>
+                <th id="t_thStatus2">Status</th>
+                <th id="t_thComment2">Comment</th>
+                <th id="t_thUploadDate2">Upload Date</th>
+                <th id="t_thActions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="supervisorTableBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section id="aboutView" class="hidden">
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <h3 id="t_aboutTitle">About Us</h3>
+            <p class="muted" id="t_aboutSubtitle" style="margin-top:6px;">Who built this system</p>
+          </div>
+          <button id="aboutBackBtn" class="btn btn-ghost" type="button">Return</button>
+        </div>
+
+        <div class="grid" style="gap:12px;">
+          <div class="card" style="background:#0f1b34;">
+            <h4 id="t_teamTitle">Team feshata</h4>
+            <p class="muted" id="t_teamBody" style="margin-top:8px; line-height:1.7;">
+              We are a small student team passionate about building practical systems that simplify real university workflows.
+            </p>
+          </div>
+
+          <div class="card" style="background:#0f1b34;">
+            <h4 id="t_leaderTitle">Team Leader</h4>
+            <p style="margin-top:8px; line-height:1.7;">
+              <strong id="t_leaderName">Ibrahim</strong>
+              <span class="muted" id="t_leaderNick">— the big shafati</span>
+            </p>
+          </div>
+
+          <div class="card" style="background:#0f1b34;">
+            <h4 id="t_humbleTitle">A humble word</h4>
+            <p class="muted" id="t_humbleBody" style="margin-top:8px; line-height:1.7;">
+              We built this project with respect for learning and teamwork. If you find any issues, we welcome feedback and will keep improving.
+            </p>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="muted" style="text-align:center; padding:18px 16px 28px;">
+    <button id="aboutLink" class="footer-link" type="button">
+      <span id="t_footer">Made by team feshata - all rights reserved to them.</span>
+    </button>
+  </footer>
+
+  <script>
+    const STORAGE_USERS_KEY = "pg_users_v2";
+    const STORAGE_DISSERTATIONS_KEY = "pg_dissertations_v2";
+    const STORAGE_SESSION_KEY = "pg_session_v2";
+    const STORAGE_LANG_KEY = "pg_lang_v1";
+
+    const el = {
+      loginForm: document.getElementById("loginForm"),
+      loginView: document.getElementById("loginView"),
+      studentView: document.getElementById("studentView"),
+      supervisorView: document.getElementById("supervisorView"),
+      aboutView: document.getElementById("aboutView"),
+      role: document.getElementById("role"),
+      name: document.getElementById("name"),
+      password: document.getElementById("password"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      uploadForm: document.getElementById("uploadForm"),
+      uploadBtn: document.getElementById("uploadBtn"),
+      fileName: document.getElementById("fileName"),
+      guestBtn: document.getElementById("guestBtn"),
+      guestReadOnly: document.getElementById("guestReadOnly"),
+      studentBadge: document.getElementById("studentBadge"),
+      studentTableBody: document.getElementById("studentTableBody"),
+      supervisorTableBody: document.getElementById("supervisorTableBody"),
+      statusFilter: document.getElementById("statusFilter"),
+      toast: document.getElementById("toast"),
+      totalCount: document.getElementById("totalCount"),
+      pendingCount: document.getElementById("pendingCount"),
+      revisionCount: document.getElementById("revisionCount"),
+      approvedCount: document.getElementById("approvedCount")
+    };
+
+    el.langEN = document.getElementById("langEN");
+    el.langAR = document.getElementById("langAR");
+    el.langTA = document.getElementById("langTA");
+    el.homeBtn = document.getElementById("homeBtn");
+    el.aboutLink = document.getElementById("aboutLink");
+    el.aboutBackBtn = document.getElementById("aboutBackBtn");
+
+    const i18n = {
+      en: {
+        dir: "ltr",
+        eyebrow: "Postgraduate Portal",
+        appTitle: "Dissertation System",
+        logout: "Logout",
+        loginTitle: "Login",
+        loginSubtitle: "Use any username/password and choose role.",
+        roleLabel: "Role",
+        roleStudent: "Student",
+        roleSupervisor: "Supervisor",
+        nameLabel: "Name",
+        namePh: "Enter your name",
+        passwordLabel: "Password",
+        passwordPh: "Enter password",
+        loginBtn: "Login",
+        guestBtn: "Skip as Guest",
+        uploadTitle: "Upload New Version",
+        uploadSubtitle: "Upload a new dissertation version. Status starts as Pending.",
+        fileLabel: "Dissertation File",
+        filePh: "e.g. thesis_v2.pdf",
+        uploadBtn: "Upload",
+        guestReadOnly: "Guest mode is read-only. Login as student to upload new files.",
+        progressTitle: "My Progress",
+        total: "Total",
+        pending: "Pending",
+        needsRevision: "Needs Revision",
+        approved: "Approved",
+        mySubmissions: "My Submissions",
+        thFile: "File",
+        thVersion: "Version",
+        thStatus: "Status",
+        thComment: "Comment",
+        thUploadDate: "Upload Date",
+        allSubmissions: "All Submissions",
+        allSubtitle: "Review, comment, and update status.",
+        filterLabel: "Filter",
+        thStudent: "Student",
+        thActions: "Actions",
+        reviewPh: "Write feedback...",
+        save: "Save",
+        all: "All",
+        underReview: "Under Review",
+        statusPending: "Pending",
+        statusUnderReview: "Under Review",
+        statusNeedsRevision: "Needs Revision",
+        statusApproved: "Approved",
+        unknown: "unknown",
+        toastMissingCreds: "Enter username and password.",
+        toastLoginOk: "Logged in successfully.",
+        toastGuestOn: "Guest mode enabled.",
+        toastGuestRO: "Guest mode is read-only.",
+        toastUploadOk: "File uploaded successfully.",
+        toastUpdated: "Submission updated successfully.",
+        toastLoggedOut: "Logged out.",
+        badgeGuest: "Guest (Read-only)",
+        badgeStudent: "Student",
+        overview: "Overview",
+        versions: "Versions",
+        footer: "Made by team feshata - all rights reserved to them."
+        ,aboutTitle: "About Us"
+        ,aboutSubtitle: "Who built this system"
+        ,aboutBack: "Return to Dashboard"
+        ,teamTitle: "Team feshata"
+        ,teamBody: "We are a small student team passionate about building practical systems that simplify real university workflows."
+        ,leaderTitle: "Team Leader"
+        ,leaderName: "Ibrahim"
+        ,leaderNick: "— the big shafati"
+        ,humbleTitle: "A humble word"
+        ,humbleBody: "We built this project with respect for learning and teamwork. If you find any issues, we welcome feedback and will keep improving."
+      },
+      ar: {
+        dir: "rtl",
+        eyebrow: "بوابة الدراسات العليا",
+        appTitle: "نظام الرسائل",
+        logout: "تسجيل خروج",
+        loginTitle: "تسجيل الدخول",
+        loginSubtitle: "استخدم أي اسم مستخدم/كلمة مرور واختر الدور.",
+        roleLabel: "الدور",
+        roleStudent: "طالب",
+        roleSupervisor: "مشرف",
+        nameLabel: "الاسم",
+        namePh: "اكتب اسمك",
+        passwordLabel: "كلمة المرور",
+        passwordPh: "اكتب كلمة المرور",
+        loginBtn: "دخول",
+        guestBtn: "تخطي كضيف",
+        uploadTitle: "رفع نسخة جديدة",
+        uploadSubtitle: "ارفع نسخة جديدة من الرسالة. الحالة تبدأ (قيد الانتظار).",
+        fileLabel: "ملف الرسالة",
+        filePh: "مثال: thesis_v2.pdf",
+        uploadBtn: "رفع",
+        guestReadOnly: "وضع الضيف للعرض فقط. سجل كطالب لرفع الملفات.",
+        progressTitle: "التقدم",
+        total: "الإجمالي",
+        pending: "قيد الانتظار",
+        needsRevision: "يحتاج تعديل",
+        approved: "معتمد",
+        mySubmissions: "ملفاتي المرفوعة",
+        thFile: "الملف",
+        thVersion: "النسخة",
+        thStatus: "الحالة",
+        thComment: "تعليق",
+        thUploadDate: "تاريخ الرفع",
+        allSubmissions: "كل الملفات",
+        allSubtitle: "راجع الملفات وأضف تعليق وحدّث الحالة.",
+        filterLabel: "فلترة",
+        thStudent: "الطالب",
+        thActions: "إجراءات",
+        reviewPh: "اكتب ملاحظاتك...",
+        save: "حفظ",
+        all: "الكل",
+        underReview: "تحت المراجعة",
+        statusPending: "قيد الانتظار",
+        statusUnderReview: "تحت المراجعة",
+        statusNeedsRevision: "يحتاج تعديل",
+        statusApproved: "معتمد",
+        unknown: "غير معروف",
+        toastMissingCreds: "اكتب اسم المستخدم وكلمة المرور.",
+        toastLoginOk: "تم تسجيل الدخول بنجاح.",
+        toastGuestOn: "تم تفعيل وضع الضيف.",
+        toastGuestRO: "وضع الضيف للعرض فقط.",
+        toastUploadOk: "تم رفع الملف بنجاح.",
+        toastUpdated: "تم تحديث الملف بنجاح.",
+        toastLoggedOut: "تم تسجيل الخروج.",
+        badgeGuest: "ضيف (عرض فقط)",
+        badgeStudent: "طالب",
+        overview: "نظرة عامة",
+        versions: "الإصدارات",
+        footer: "تم بواسطة فريق feshata وكل الحقوق ترجع لهم",
+        aboutTitle: "من نحن",
+        aboutSubtitle: "من قام ببناء هذا النظام",
+        aboutBack: "العودة للداشبورد",
+        teamTitle: "فريق feshata",
+        teamBody: "نحن فريق طلابي صغير شغوف ببناء أنظمة عملية تسهّل الإجراءات الجامعية وتُنظم سير العمل.",
+        leaderTitle: "قائد الفريق",
+        leaderName: "Ibrahim",
+        leaderNick: "— the big shafati",
+        humbleTitle: "كلمة تواضع",
+        humbleBody: "بنينا هذا المشروع بروح التعلم والعمل الجماعي. إذا لاحظت أي مشكلة، يسعدنا استقبال ملاحظاتك وسنواصل التطوير."
+      },
+      ta: {
+        dir: "ltr",
+        eyebrow: "மேற்படிப்பு போர்டல்",
+        appTitle: "ஆய்வுக்கட்டுரை அமைப்பு",
+        logout: "வெளியேறு",
+        loginTitle: "உள்நுழை",
+        loginSubtitle: "ஏதேனும் பயனர் பெயர்/கடவுச்சொல் பயன்படுத்தி பாத்திரத்தை தேர்வு செய்யவும்.",
+        roleLabel: "பாத்திரம்",
+        roleStudent: "மாணவர்",
+        roleSupervisor: "மேற்பார்வையாளர்",
+        nameLabel: "பெயர்",
+        namePh: "உங்கள் பெயரை உள்ளிடுங்கள்",
+        passwordLabel: "கடவுச்சொல்",
+        passwordPh: "கடவுச்சொல்லை உள்ளிடுங்கள்",
+        loginBtn: "உள்நுழை",
+        guestBtn: "விருந்தினராக தொடரவும்",
+        uploadTitle: "புதிய பதிப்பு பதிவேற்றம்",
+        uploadSubtitle: "ஆய்வுக்கட்டுரையின் புதிய பதிப்பை பதிவேற்றவும். நிலை Pending ஆக தொடங்கும்.",
+        fileLabel: "ஆய்வுக்கட்டுரை கோப்பு",
+        filePh: "எ.கா: thesis_v2.pdf",
+        uploadBtn: "பதிவேற்றம்",
+        guestReadOnly: "விருந்தினர் முறை வாசிப்பிற்கு மட்டும். பதிவேற்ற மாணவராக உள்நுழையவும்.",
+        progressTitle: "என் முன்னேற்றம்",
+        total: "மொத்தம்",
+        pending: "Pending",
+        needsRevision: "திருத்தம் தேவை",
+        approved: "அங்கீகரிக்கப்பட்டது",
+        mySubmissions: "என் சமர்ப்பிப்புகள்",
+        thFile: "கோப்பு",
+        thVersion: "பதிப்பு",
+        thStatus: "நிலை",
+        thComment: "கருத்து",
+        thUploadDate: "பதிவேற்ற தேதி",
+        allSubmissions: "அனைத்து சமர்ப்பிப்புகள்",
+        allSubtitle: "மதிப்பாய்வு செய்து கருத்து/நிலையை புதுப்பிக்கவும்.",
+        filterLabel: "வடிகட்டி",
+        thStudent: "மாணவர்",
+        thActions: "செயல்கள்",
+        reviewPh: "கருத்துகளை எழுதுங்கள்...",
+        save: "சேமி",
+        all: "அனைத்தும்",
+        underReview: "மதிப்பாய்வில்",
+        statusPending: "நிலுவையில்",
+        statusUnderReview: "மதிப்பாய்வில்",
+        statusNeedsRevision: "திருத்தம் தேவை",
+        statusApproved: "அங்கீகரிக்கப்பட்டது",
+        unknown: "தெரியாது",
+        toastMissingCreds: "பயனர் பெயரும் கடவுச்சொல்லும் உள்ளிடுங்கள்.",
+        toastLoginOk: "வெற்றிகரமாக உள்நுழைந்தது.",
+        toastGuestOn: "விருந்தினர் முறை இயக்கு.",
+        toastGuestRO: "விருந்தினர் முறை வாசிப்பிற்கு மட்டும்.",
+        toastUploadOk: "கோப்பு பதிவேற்றம் வெற்றி.",
+        toastUpdated: "சமர்ப்பிப்பு புதுப்பிக்கப்பட்டது.",
+        toastLoggedOut: "வெளியேறியது.",
+        badgeGuest: "விருந்தினர் (வாசிப்பு மட்டும்)",
+        badgeStudent: "மாணவர்",
+        overview: "சுருக்கம்",
+        versions: "பதிப்புகள்",
+        footer: "Team feshata உருவாக்கியது - அனைத்து உரிமைகளும் அவர்களுக்கே.",
+        aboutTitle: "எங்களை பற்றி",
+        aboutSubtitle: "இந்த அமைப்பை உருவாக்கியது யார்",
+        aboutBack: "டாஷ்போர்டுக்கு திரும்பு",
+        teamTitle: "Team feshata",
+        teamBody: "பல்கலைக்கழக செயல்முறைகளை எளிமைப்படுத்தும் நடைமுறை அமைப்புகளை உருவாக்க ஆர்வமுள்ள சிறிய மாணவர் குழு நாங்கள்.",
+        leaderTitle: "குழு தலைவர்",
+        leaderName: "Ibrahim",
+        leaderNick: "— the big shafati",
+        humbleTitle: "ஒரு தாழ்மையான வார்த்தை",
+        humbleBody: "கற்றலும் குழு பணியும் மதிப்புடன் இந்த திட்டத்தை உருவாக்கினோம். ஏதேனும் பிழைகள் இருந்தால், உங்கள் கருத்துகளை வரவேற்கிறோம்; மேலும் மேம்படுத்துவோம்."
+      }
+    };
+
+    let currentLang = readJSON(STORAGE_LANG_KEY, "en");
+    if (!i18n[currentLang]) currentLang = "en";
+
+    function applyLanguage(lang) {
+      if (!i18n[lang]) return;
+      currentLang = lang;
+      saveJSON(STORAGE_LANG_KEY, currentLang);
+
+      const t = i18n[lang];
+      document.documentElement.lang = lang === "ar" ? "ar" : (lang === "ta" ? "ta" : "en");
+      document.documentElement.dir = t.dir;
+
+      const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+      setText("t_eyebrow", t.eyebrow);
+      setText("t_appTitle", t.appTitle);
+      el.logoutBtn.textContent = t.logout;
+      setText("t_loginTitle", t.loginTitle);
+      setText("t_loginSubtitle", t.loginSubtitle);
+      setText("t_roleLabel", t.roleLabel);
+      setText("t_roleStudent", t.roleStudent);
+      setText("t_roleSupervisor", t.roleSupervisor);
+      setText("t_nameLabel", t.nameLabel);
+      setText("t_passwordLabel", t.passwordLabel);
+      setText("t_loginBtn", t.loginBtn);
+      el.guestBtn.textContent = t.guestBtn;
+      setText("t_uploadTitle", t.uploadTitle);
+      setText("t_uploadSubtitle", t.uploadSubtitle);
+      setText("t_fileLabel", t.fileLabel);
+      el.uploadBtn.textContent = t.uploadBtn;
+      el.guestReadOnly.textContent = t.guestReadOnly;
+      setText("t_progressTitle", t.progressTitle);
+      setText("t_totalLabel", t.total);
+      setText("t_pendingLabel", t.pending);
+      setText("t_revisionLabel", t.needsRevision);
+      setText("t_approvedLabel", t.approved);
+      setText("t_mySubmissions", t.mySubmissions);
+      setText("t_thFile", t.thFile);
+      setText("t_thVersion", t.thVersion);
+      setText("t_thStatus", t.thStatus);
+      setText("t_thComment", t.thComment);
+      setText("t_thUploadDate", t.thUploadDate);
+      setText("t_allSubmissions", t.allSubmissions);
+      setText("t_allSubtitle", t.allSubtitle);
+      setText("t_filterLabel", t.filterLabel);
+      setText("t_thStudent", t.thStudent);
+      setText("t_thFile2", t.thFile);
+      setText("t_thVersion2", t.thVersion);
+      setText("t_thStatus2", t.thStatus);
+      setText("t_thComment2", t.thComment);
+      setText("t_thUploadDate2", t.thUploadDate);
+      setText("t_thActions", t.thActions);
+      setText("t_overviewBadge", t.overview);
+      setText("t_versionsBadge", t.versions);
+      setText("t_filterAll", t.all);
+      setText("t_filterPending", t.statusPending);
+      setText("t_filterUnderReview", t.statusUnderReview);
+      setText("t_filterNeedsRevision", t.statusNeedsRevision);
+      setText("t_filterApproved", t.statusApproved);
+      setText("t_aboutTitle", t.aboutTitle);
+      setText("t_aboutSubtitle", t.aboutSubtitle);
+      setText("t_teamTitle", t.teamTitle);
+      setText("t_teamBody", t.teamBody);
+      setText("t_leaderTitle", t.leaderTitle);
+      setText("t_leaderName", t.leaderName);
+      setText("t_leaderNick", t.leaderNick);
+      setText("t_humbleTitle", t.humbleTitle);
+      setText("t_humbleBody", t.humbleBody);
+      if (el.aboutBackBtn) el.aboutBackBtn.textContent = t.aboutBack;
+      const footer = document.getElementById("t_footer");
+      if (footer) footer.textContent = t.footer;
+
+      el.name.placeholder = t.namePh;
+      el.password.placeholder = t.passwordPh;
+      el.fileName.placeholder = t.filePh;
+
+      // Update dynamic placeholders inside supervisor table (if visible)
+      renderSupervisorTable();
+
+      // Update badge text if student view is open
+      if (currentUser && currentUser.role === "student") {
+        el.studentBadge.textContent = currentUser.isGuest ? t.badgeGuest : t.badgeStudent;
+      }
+    }
+
+    function readJSON(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveJSON(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    let users = readJSON(STORAGE_USERS_KEY, { students: [], supervisors: [] });
+    let dissertations = readJSON(STORAGE_DISSERTATIONS_KEY, []);
+    let currentUser = readJSON(STORAGE_SESSION_KEY, null);
+
+    function statusClass(status) {
+      const map = { "Pending":"pending", "Under Review":"under-review", "Needs Revision":"needs-revision", "Approved":"approved" };
+      return map[status] || "pending";
+    }
+
+    function statusText(status) {
+      const t = i18n[currentLang] || i18n.en;
+      const map = {
+        "Pending": t.statusPending,
+        "Under Review": t.statusUnderReview,
+        "Needs Revision": t.statusNeedsRevision,
+        "Approved": t.statusApproved
+      };
+      return map[status] || status;
+    }
+
+    function showToast(message) {
+      el.toast.textContent = message;
+      el.toast.classList.remove("hidden");
+      setTimeout(() => el.toast.classList.add("hidden"), 2200);
+    }
+
+    function nowDate() {
+      return new Date().toLocaleString();
+    }
+
+    function resetViews() {
+      el.loginView.classList.add("hidden");
+      el.studentView.classList.add("hidden");
+      el.supervisorView.classList.add("hidden");
+      el.aboutView.classList.add("hidden");
+    }
+
+    function persistAll() {
+      saveJSON(STORAGE_USERS_KEY, users);
+      saveJSON(STORAGE_DISSERTATIONS_KEY, dissertations);
+      saveJSON(STORAGE_SESSION_KEY, currentUser);
+    }
+
+    function findOrCreateUser(role, name) {
+      const normalized = name.trim().toLowerCase();
+      const pool = role === "student" ? users.students : users.supervisors;
+      let user = pool.find((u) => u.name === normalized);
+      if (!user) {
+        user = { id: Date.now() + Math.floor(Math.random() * 1000), name: normalized };
+        pool.push(user);
+      }
+      return user;
+    }
+
+    function renderStudentTable() {
+      const myItems = dissertations.filter((d) => d.studentId === currentUser.id).sort((a, b) => b.version - a.version);
+      el.studentTableBody.innerHTML = myItems.map((item) => `
+        <tr>
+          <td>${item.fileName}</td>
+          <td>V${item.version}</td>
+          <td class="status ${statusClass(item.status)}">${statusText(item.status)}</td>
+          <td>${item.comment || "-"}</td>
+          <td>${item.uploadDate}</td>
+        </tr>
+      `).join("");
+
+      const summary = myItems.reduce((acc, it) => {
+        acc.total += 1;
+        if (it.status === "Pending") acc.pending += 1;
+        if (it.status === "Needs Revision") acc.revision += 1;
+        if (it.status === "Approved") acc.approved += 1;
+        return acc;
+      }, { total: 0, pending: 0, revision: 0, approved: 0 });
+
+      el.totalCount.textContent = summary.total;
+      el.pendingCount.textContent = summary.pending;
+      el.revisionCount.textContent = summary.revision;
+      el.approvedCount.textContent = summary.approved;
+    }
+
+    function renderSupervisorTable() {
+      const filter = el.statusFilter.value;
+      const items = dissertations.filter((d) => (filter === "all" ? true : d.status === filter)).sort((a, b) => b.id - a.id);
+      el.supervisorTableBody.innerHTML = items.map((item) => {
+        const student = users.students.find((s) => s.id === item.studentId);
+        const t = i18n[currentLang] || i18n.en;
+        return `
+          <tr>
+            <td>${student ? student.name : t.unknown}</td>
+            <td>${item.fileName}</td>
+            <td>V${item.version}</td>
+            <td class="status ${statusClass(item.status)}">${statusText(item.status)}</td>
+            <td>${item.comment || "-"}</td>
+            <td>${item.uploadDate}</td>
+            <td>
+              <div class="actions">
+                <textarea id="comment-${item.id}" placeholder="${t.reviewPh}">${item.comment || ""}</textarea>
+                <select id="status-${item.id}">
+                  <option value="Under Review" ${item.status === "Under Review" ? "selected" : ""}>${t.statusUnderReview}</option>
+                  <option value="Needs Revision" ${item.status === "Needs Revision" ? "selected" : ""}>${t.statusNeedsRevision}</option>
+                  <option value="Approved" ${item.status === "Approved" ? "selected" : ""}>${t.statusApproved}</option>
+                </select>
+                <button class="btn btn-primary small" data-save-id="${item.id}">${t.save}</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+    }
+
+    function showStudentDashboard() {
+      resetViews();
+      el.studentView.classList.remove("hidden");
+      el.logoutBtn.classList.remove("hidden");
+      const guest = Boolean(currentUser.isGuest);
+      const t = i18n[currentLang] || i18n.en;
+      el.studentBadge.textContent = guest ? t.badgeGuest : t.badgeStudent;
+      el.guestReadOnly.classList.toggle("hidden", !guest);
+      el.uploadBtn.disabled = guest;
+      el.fileName.disabled = guest;
+      renderStudentTable();
+    }
+
+    function showSupervisorDashboard() {
+      resetViews();
+      el.supervisorView.classList.remove("hidden");
+      el.logoutBtn.classList.remove("hidden");
+      renderSupervisorTable();
+    }
+
+    function openCurrentSession() {
+      if (!currentUser) {
+        resetViews();
+        el.loginView.classList.remove("hidden");
+        el.logoutBtn.classList.add("hidden");
+        return;
+      }
+      if (currentUser.role === "student") showStudentDashboard();
+      else showSupervisorDashboard();
+    }
+
+    function showAboutView() {
+      resetViews();
+      el.aboutView.classList.remove("hidden");
+      el.logoutBtn.classList.toggle("hidden", !currentUser);
+    }
+
+    el.loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const role = (el.role.value || "student").toLowerCase();
+      const name = el.name.value.trim();
+      const password = el.password.value.trim();
+      if (!name || !password) {
+        const t = i18n[currentLang] || i18n.en;
+        showToast(t.toastMissingCreds);
+        return;
+      }
+
+      const user = findOrCreateUser(role === "supervisor" ? "supervisor" : "student", name);
+      currentUser = { id: user.id, name: user.name, role: role === "supervisor" ? "supervisor" : "student", isGuest: false };
+      persistAll();
+      const t = i18n[currentLang] || i18n.en;
+      showToast(t.toastLoginOk);
+      openCurrentSession();
+    });
+
+    el.guestBtn.addEventListener("click", () => {
+      const guestUser = findOrCreateUser("student", "guest_student");
+      currentUser = { id: guestUser.id, name: guestUser.name, role: "student", isGuest: true };
+      persistAll();
+      const t = i18n[currentLang] || i18n.en;
+      showToast(t.toastGuestOn);
+      openCurrentSession();
+    });
+
+    el.uploadForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!currentUser || currentUser.role !== "student") return;
+      if (currentUser.isGuest) {
+        const t = i18n[currentLang] || i18n.en;
+        showToast(t.toastGuestRO);
+        return;
+      }
+
+      const fileName = el.fileName.value.trim();
+      if (!fileName) return;
+      const myVersions = dissertations.filter((d) => d.studentId === currentUser.id).map((d) => d.version);
+      const nextVersion = myVersions.length ? Math.max(...myVersions) + 1 : 1;
+      dissertations.push({ id: Date.now(), studentId: currentUser.id, fileName, version: nextVersion, status: "Pending", comment: "", uploadDate: nowDate() });
+      persistAll();
+      renderStudentTable();
+      el.fileName.value = "";
+      const t = i18n[currentLang] || i18n.en;
+      showToast(t.toastUploadOk);
+    });
+
+    el.statusFilter.addEventListener("change", renderSupervisorTable);
+
+    el.supervisorTableBody.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-save-id]");
+      if (!btn) return;
+      const itemId = Number(btn.dataset.saveId);
+      const item = dissertations.find((d) => d.id === itemId);
+      if (!item) return;
+      const selectedStatus = document.getElementById(`status-${itemId}`)?.value;
+      const comment = document.getElementById(`comment-${itemId}`)?.value.trim();
+      item.status = selectedStatus || item.status;
+      item.comment = comment || "";
+      persistAll();
+      renderSupervisorTable();
+      const t = i18n[currentLang] || i18n.en;
+      showToast(t.toastUpdated);
+    });
+
+    el.logoutBtn.addEventListener("click", () => {
+      currentUser = null;
+      saveJSON(STORAGE_SESSION_KEY, null);
+      el.loginForm.reset();
+      const t = i18n[currentLang] || i18n.en;
+      showToast(t.toastLoggedOut);
+      openCurrentSession();
+    });
+
+    el.homeBtn.addEventListener("click", () => {
+      openCurrentSession();
+    });
+
+    el.aboutLink.addEventListener("click", () => {
+      showAboutView();
+    });
+
+    el.aboutBackBtn.addEventListener("click", () => {
+      openCurrentSession();
+    });
+
+    el.langEN.addEventListener("click", () => applyLanguage("en"));
+    el.langAR.addEventListener("click", () => applyLanguage("ar"));
+    el.langTA.addEventListener("click", () => applyLanguage("ta"));
+
+    applyLanguage(currentLang);
+    openCurrentSession();
+  </script>
+</body>
+</html>

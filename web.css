@@ -1,0 +1,60 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.container { max-width: 1150px; margin: 0 auto; padding: 24px 16px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.title { margin: 0; font-size: 28px; }
+.muted { color: #94a3b8; }
+.card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.grid { display: grid; gap: 14px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+label { display: block; margin-bottom: 10px; font-size: 14px; }
+input, select, textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid #334155;
+  border-radius: 8px;
+}
+button, .btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button:hover, .btn:hover { background: #2563eb; }
+.btn-ghost { background: transparent; border: 1px solid #334155; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; min-width: 780px; }
+th, td { text-align: left; padding: 10px; border-bottom: 1px solid #334155; vertical-align: top; }
+tr:hover { background: #334155; }
+.table-wrap { overflow-x: auto; }
+.status { font-weight: 700; }
+.pending { color: orange; }
+.under-review { color: #38bdf8; }
+.needs-revision { color: #fb7185; }
+.approved { color: #22c55e; }
+.alert { padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+.success { background: rgba(34,197,94,.15); border: 1px solid #22c55e; }
+.error { background: rgba(239,68,68,.15); border: 1px solid #ef4444; }
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.stat { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; }
+.stat h3 { margin: 6px 0 0; }
+@media (max-width: 900px) {
+  .grid-2, .stats { grid-template-columns: 1fr; }
+}
