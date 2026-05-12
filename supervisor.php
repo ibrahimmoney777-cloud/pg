@@ -75,25 +75,25 @@ function statusClass(string $status): string
         <thead>
           <tr>
             <th>Student</th>
-            <th>File</th>
+            <th>Filename</th>
             <th>Version</th>
             <th>Status</th>
             <th>Comment</th>
             <th>Upload Date</th>
-            <th>File</th>
-            <th>Action</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
         <?php foreach ($items as $item): ?>
           <tr>
             <td><?= h($item['student_name']) ?></td>
-            <td><?= h($item['file_name']) ?></td>
+            <td>
+              <a class="file-link" href="download.php?id=<?= (int)$item['id'] ?>" target="_blank" rel="noopener" title="Open uploaded file"><?= h($item['file_name']) ?></a>
+            </td>
             <td>V<?= (int)$item['version'] ?></td>
             <td class="status <?= statusClass($item['status']) ?>"><?= h($item['status']) ?></td>
             <td><?= h($item['comment']) ?: '-' ?></td>
             <td><?= h((string)$item['upload_date']) ?></td>
-            <td><a class="btn btn-ghost" href="<?= h($item['file_path']) ?>" target="_blank">Open</a></td>
             <td>
               <form method="post" action="review.php" style="min-width:220px;">
                 <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">

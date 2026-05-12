@@ -61,10 +61,10 @@ function statusClass(string $status): string
           Guest mode is read-only. Login with a regular student account to upload files.
         </div>
       <?php else: ?>
-        <p class="muted" style="margin:6px 0 12px;">Allowed files: PDF, DOC, DOCX</p>
+        <p class="muted" style="margin:6px 0 12px;">You can upload any file type.</p>
         <form method="post" action="upload.php" enctype="multipart/form-data">
           <label>Choose file
-            <input type="file" name="dissertation_file" accept=".pdf,.doc,.docx" required>
+            <input type="file" name="dissertation_file" required>
           </label>
           <button type="submit">Upload</button>
         </form>
@@ -98,7 +98,9 @@ function statusClass(string $status): string
         <tbody>
         <?php foreach ($items as $item): ?>
           <tr>
-            <td><?= h($item['file_name']) ?></td>
+            <td>
+              <a class="file-link" href="download.php?id=<?= (int)$item['id'] ?>" target="_blank" rel="noopener" title="Open your file"><?= h($item['file_name']) ?></a>
+            </td>
             <td>V<?= (int)$item['version'] ?></td>
             <td class="status <?= statusClass($item['status']) ?>"><?= h($item['status']) ?></td>
             <td><?= h($item['comment']) ?: '-' ?></td>

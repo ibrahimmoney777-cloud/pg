@@ -6,14 +6,31 @@
   <title>PG Dissertation Management System</title>
   <style>
     :root { --bg:#0f172a; --bg-soft:#111c35; --card:#1e293b; --card-2:#243247; --text:#e2e8f0; --muted:#94a3b8; --primary:#3b82f6; --primary-hover:#2563eb; --border:#334155; --pending:#f59e0b; --review:#38bdf8; --revision:#fb7185; --approved:#22c55e; }
+    body.theme-light { --bg:#f1f5f9; --bg-soft:#ffffff; --card:#e2e8f0; --card-2:#cbd5e1; --text:#0f172a; --muted:#475569; --primary:#2563eb; --primary-hover:#1d4ed8; --border:#94a3b8; }
     * { box-sizing: border-box; }
     body { margin:0; font-family: Inter, Arial, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
     .app-bg { position:fixed; inset:0; background:radial-gradient(circle at top right,#1d4ed8 0%,transparent 35%),radial-gradient(circle at bottom left,#0ea5e9 0%,transparent 20%); opacity:.2; pointer-events:none; }
     .app-shell { position:relative; max-width:1150px; margin:0 auto; padding:30px 18px 50px; }
     .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; gap:12px; }
     .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-    .lang-group { display:flex; gap:8px; }
-    .lang-btn { padding:8px 10px; font-size:13px; }
+    .lang-select-wrap { position: relative; display: inline-flex; align-items: center; }
+    .lang-logo {
+      position: absolute;
+      left: 10px;
+      pointer-events: none;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .lang-select {
+      min-width: 140px;
+      padding: 8px 10px 8px 30px;
+      border-radius: 10px;
+      font-size: 13px;
+      background: var(--bg-soft);
+      color: #cbd5e1;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
     .eyebrow { margin:0; color:var(--review); font-size:13px; text-transform:uppercase; letter-spacing:1px; }
     h1 { margin:4px 0 0; font-size:30px; } h2,h3,h4,p { margin:0; }
     .app-title-link {
@@ -26,7 +43,7 @@
       font: inherit;
     }
     .app-title-link:hover {
-      color: #93c5fd;
+      color: #000000;
     }
     .panel,.card { background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%); border:1px solid rgba(148,163,184,.12); border-radius:16px; box-shadow:0 12px 35px rgba(2,6,23,.45); }
     .panel { max-width:520px; margin:0 auto; padding:26px; } .panel-title { margin-bottom:18px; }
@@ -68,6 +85,54 @@
       text-decoration-color: #93c5fd;
     }
     .hidden { display:none !important; }
+    /* Real file picker: hidden input + button opens OS file explorer */
+    .file-input-native {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .file-picker-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .file-name-display {
+      font-size: 13px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    /* Clickable submission name — opens file (supervisor / student) */
+    .open-file-name {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: #93c5fd;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-align: left;
+      word-break: break-all;
+    }
+    .open-file-name:hover { color: #bfdbfe; }
+    .btn-danger-outline {
+      border: 1px solid rgba(248, 113, 113, 0.65);
+      color: #fecaca;
+      background: transparent;
+    }
+    .btn-danger-outline:hover {
+      background: rgba(248, 113, 113, 0.12);
+      color: #fff;
+    }
     @media (max-width:940px) { .grid.two-cols { grid-template-columns:1fr; } h1 { font-size:25px; } .actions-row { flex-direction:column; } }
   </style>
 </head>
@@ -82,11 +147,17 @@
         </button>
       </div>
       <div class="topbar-right">
-        <div class="lang-group" role="group" aria-label="Language switcher">
-          <button id="langEN" class="btn btn-ghost lang-btn" type="button">English</button>
-          <button id="langAR" class="btn btn-ghost lang-btn" type="button">العربية</button>
-          <button id="langTA" class="btn btn-ghost lang-btn" type="button">தமிழ்</button>
+        <div class="lang-select-wrap" aria-label="Language switcher">
+          <span class="lang-logo" aria-hidden="true">🌐</span>
+          <select id="langSelect" class="lang-select">
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+            <option value="ta">தமிழ்</option>
+          </select>
         </div>
+        <button id="themeToggleBtn" class="btn btn-ghost" type="button">Theme</button>
+        <button id="featuresBtn" class="btn btn-ghost hidden" type="button">Features</button>
+        <button id="journalBtn" class="btn btn-ghost hidden" type="button">Journal</button>
         <button id="logoutBtn" class="btn btn-ghost hidden">Logout</button>
       </div>
     </header>
@@ -114,7 +185,42 @@
         <button class="btn btn-primary" type="submit" id="t_loginBtn">Login</button>
       </form>
       <div class="actions-row">
+        <button id="registerBtn" class="btn btn-ghost" type="button">Register</button>
         <button id="guestBtn" class="btn btn-ghost" type="button">Skip as Guest</button>
+      </div>
+    </section>
+
+    <section id="signupView" class="panel hidden">
+      <div class="panel-title">
+        <h2 id="t_signupTitle">Create Account</h2>
+        <p id="t_signupSubtitle">Fill all details to create your account.</p>
+      </div>
+      <form id="signupForm" class="form-grid">
+        <label><span id="t_signupRoleLabel">Role</span>
+          <select id="signupRole">
+            <option value="student" id="t_signupRoleStudent">Student</option>
+            <option value="supervisor" id="t_signupRoleSupervisor">Supervisor</option>
+          </select>
+        </label>
+        <label><span id="t_signupNameLabel">Full Name</span>
+          <input id="signupName" type="text" placeholder="Enter full name" required />
+        </label>
+        <label><span id="t_signupEmailLabel">Email</span>
+          <input id="signupEmail" type="email" placeholder="Enter email" required />
+        </label>
+        <label><span id="t_signupPhoneLabel">Phone Number</span>
+          <input id="signupPhone" type="tel" placeholder="Enter phone number" required />
+        </label>
+        <label><span id="t_signupPasswordLabel">Password</span>
+          <input id="signupPassword" type="password" placeholder="Create password" required />
+        </label>
+        <label><span id="t_signupConfirmPasswordLabel">Confirm Password</span>
+          <input id="signupConfirmPassword" type="password" placeholder="Re-enter password" required />
+        </label>
+        <button class="btn btn-primary" type="submit" id="t_signupSubmitBtn">Create Account</button>
+      </form>
+      <div class="actions-row">
+        <button id="signupBackBtn" class="btn btn-ghost" type="button">Back to Login</button>
       </div>
     </section>
 
@@ -125,10 +231,28 @@
             <h3 id="t_uploadTitle">Upload New Version</h3>
             <span class="badge" id="studentBadge">Student</span>
           </div>
-          <p class="muted" id="t_uploadSubtitle">Upload a new dissertation version. Status starts as Pending.</p>
+          <p class="muted" id="t_uploadSubtitle">Upload a new dissertation version (any file type). Status starts as Pending.</p>
+          <p class="muted small" id="deadlineInfo" style="margin-top:8px;"></p>
+          <p class="muted small" style="margin-top:8px;line-height:1.55;">
+            <strong>Important:</strong> Open this site with <code style="color:#cbd5e1;">http://localhost</code> (e.g. run <code style="color:#cbd5e1;">npx serve .</code> in this folder).
+            Using <code style="color:#cbd5e1;">file://</code> can break saving/opening uploads for supervisors.
+          </p>
           <form id="uploadForm" class="stack">
-            <label><span id="t_fileLabel">Dissertation File</span>
-              <input id="fileName" type="text" placeholder="e.g. thesis_v2.pdf" required />
+            <label style="position:relative;">
+              <span id="t_fileLabel">Dissertation File</span>
+              <div class="file-picker-row">
+                <input
+                  id="projectFile"
+                  class="file-input-native"
+                  type="file"
+                  aria-describedby="fileNameDisplay"
+                  required
+                />
+                <button id="browseFileBtn" class="btn btn-ghost small" type="button">
+                  Choose file
+                </button>
+                <span id="fileNameDisplay" class="file-name-display"></span>
+              </div>
             </label>
             <button id="uploadBtn" class="btn btn-primary" type="submit">Upload</button>
           </form>
@@ -146,13 +270,19 @@
             <div><p id="t_revisionLabel">Needs Revision</p><h4 id="revisionCount">0</h4></div>
             <div><p id="t_approvedLabel">Approved</p><h4 id="approvedCount">0</h4></div>
           </div>
+          <div class="mt">
+            <button id="openSupervisorDetailsBtn" class="btn btn-ghost small" type="button">View Supervisor Details</button>
+          </div>
         </article>
       </div>
 
       <article class="card mt">
-        <div class="card-head">
+        <div class="card-head" style="flex-wrap:wrap; gap:10px;">
           <h3 id="t_mySubmissions">My Submissions</h3>
-          <span class="badge" id="t_versionsBadge">Versions</span>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-left:auto;">
+            <span class="badge" id="t_versionsBadge">Versions</span>
+            <button type="button" id="resetWorkBtn" class="btn btn-ghost small btn-danger-outline hidden">Reset all my work</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -209,6 +339,165 @@
       </article>
     </section>
 
+    <section id="journalView" class="hidden">
+      <article class="card">
+        <div class="card-head split">
+          <div>
+            <h3 id="t_journalTitle">Journal</h3>
+            <p class="muted" id="t_journalSubtitle">Write private progress notes and keep your research log.</p>
+          </div>
+          <button id="journalBackBtn" class="btn btn-ghost" type="button">Return</button>
+        </div>
+
+        <form id="journalForm" class="stack" style="margin-top:14px;">
+          <label>
+            <span id="t_journalEntryTitle">Entry title</span>
+            <input id="journalTitleInput" type="text" placeholder="Weekly progress" maxlength="120" />
+          </label>
+          <label>
+            <span id="t_journalEntryBody">Entry details</span>
+            <textarea id="journalBodyInput" rows="5" placeholder="Write your notes, blockers, and next steps..."></textarea>
+          </label>
+          <button id="journalSaveBtn" class="btn btn-primary" type="submit">Save entry</button>
+        </form>
+      </article>
+
+      <article class="card mt">
+        <div class="card-head">
+          <h3 id="t_journalMyEntries">My Journal Entries</h3>
+        </div>
+        <div class="file-picker-row" style="margin-bottom:12px;">
+          <input id="journalSearchInput" type="search" placeholder="Search journal..." />
+          <select id="journalDateFilter">
+            <option id="journalFilterAll" value="all">All time</option>
+            <option id="journalFilterToday" value="today">Today</option>
+            <option id="journalFilter7d" value="7d">Last 7 days</option>
+          </select>
+        </div>
+        <div id="journalEntriesList" class="stack"></div>
+      </article>
+    </section>
+
+    <section id="supervisorDetailsView" class="hidden">
+      <article class="card">
+        <div class="card-head split">
+          <div>
+            <h3 id="t_supervisorContactsTitle">Supervisor Contacts</h3>
+            <p class="muted" id="t_supervisorContactsSubtitle">Contact your supervisors directly.</p>
+          </div>
+          <button id="supervisorDetailsBackBtn" class="btn btn-ghost" type="button">Return</button>
+        </div>
+        <div id="supervisorContactsList" class="muted" style="margin-top:10px; line-height:1.7;"></div>
+      </article>
+    </section>
+
+    <section id="featuresView" class="hidden">
+      <article class="card">
+        <div class="card-head split">
+          <div>
+            <h3 id="t_featuresTitle">Feature Hub</h3>
+            <p class="muted" id="t_featuresSubtitle">Extra tools and workflows</p>
+          </div>
+          <button id="featuresBackBtn" class="btn btn-ghost" type="button">Return</button>
+        </div>
+      </article>
+
+      <article class="card mt">
+        <h4>Announcements</h4>
+        <form id="announceForm" class="stack mt">
+          <input id="announceTitle" type="text" placeholder="Announcement title" />
+          <textarea id="announceBody" rows="3" placeholder="Announcement text"></textarea>
+          <button id="announcePostBtn" class="btn btn-primary small" type="submit">Post Announcement</button>
+        </form>
+        <div id="announceList" class="stack mt"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>Office Hours Booking</h4>
+        <form id="meetingForm" class="stack mt">
+          <input id="meetingDate" type="datetime-local" />
+          <input id="meetingTopic" type="text" placeholder="Meeting topic" />
+          <button id="meetingBookBtn" class="btn btn-primary small" type="submit">Book Meeting</button>
+        </form>
+        <div id="meetingList" class="stack mt"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>Defense Schedule</h4>
+        <form id="defenseForm" class="stack mt">
+          <input id="defenseDate" type="datetime-local" />
+          <input id="defenseRoom" type="text" placeholder="Room / Link" />
+          <button id="defenseSaveBtn" class="btn btn-primary small" type="submit">Save Defense Schedule</button>
+        </form>
+        <div id="defenseView" class="muted mt"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>AI Writing Checklist</h4>
+        <textarea id="checklistText" rows="4" placeholder="Paste your draft text"></textarea>
+        <button id="runChecklistBtn" class="btn btn-ghost small mt" type="button">Run Checklist</button>
+        <div id="checklistResult" class="muted mt"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>Plagiarism Checklist</h4>
+        <form id="plagForm" class="stack mt">
+          <input id="plagReportName" type="text" placeholder="Report file name" />
+          <input id="plagSimilarity" type="number" min="0" max="100" placeholder="Similarity %" />
+          <button id="plagSaveBtn" class="btn btn-primary small" type="submit">Save Plagiarism Report</button>
+        </form>
+        <div id="plagView" class="muted mt"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>Chapter Progress Tracker</h4>
+        <div class="stack mt" id="chapterProgressWrap"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>Task Board (Kanban)</h4>
+        <form id="taskForm" class="file-picker-row mt">
+          <input id="taskInput" type="text" placeholder="New task..." />
+          <button id="taskAddBtn" class="btn btn-primary small" type="submit">Add</button>
+        </form>
+        <div id="taskBoard" class="grid two-cols mt"></div>
+      </article>
+
+      <article class="card mt">
+        <h4>FAQ / Help Center</h4>
+        <div class="muted mt">
+          <p><strong>Q:</strong> Which file types can I upload? <strong>A:</strong> Any file type is accepted.</p>
+          <p><strong>Q:</strong> How to contact supervisor? <strong>A:</strong> Use Supervisor Details page.</p>
+          <p><strong>Q:</strong> Why cannot upload? <strong>A:</strong> Archive mode may be enabled.</p>
+        </div>
+      </article>
+
+      <article class="card mt">
+        <h4>Notification Preferences</h4>
+        <div class="stack mt">
+          <label><input id="notifEmail" type="checkbox" /> Email notifications</label>
+          <label><input id="notifWhatsapp" type="checkbox" /> WhatsApp notifications</label>
+          <label><input id="notifInApp" type="checkbox" /> In-app notifications</label>
+          <button id="notifSaveBtn" class="btn btn-primary small" type="button">Save Preferences</button>
+        </div>
+      </article>
+
+      <article class="card mt">
+        <h4>Semester Archive Mode</h4>
+        <div class="file-picker-row mt">
+          <label><input id="archiveToggle" type="checkbox" /> Enable archive (read-only)</label>
+          <button id="archiveSaveBtn" class="btn btn-ghost small" type="button">Apply</button>
+        </div>
+        <p id="archiveStatus" class="muted mt"></p>
+      </article>
+
+      <article class="card mt">
+        <h4>Certificate Generator</h4>
+        <button id="generateCertBtn" class="btn btn-primary small" type="button">Generate Approval Certificate</button>
+        <div id="certList" class="stack mt"></div>
+      </article>
+    </section>
+
     <section id="aboutView" class="hidden">
       <article class="card">
         <div class="card-head">
@@ -228,11 +517,15 @@
           </div>
 
           <div class="card" style="background:#0f1b34;">
-            <h4 id="t_leaderTitle">Team Leader</h4>
-            <p style="margin-top:8px; line-height:1.7;">
-              <strong id="t_leaderName">Ibrahim</strong>
-              <span class="muted" id="t_leaderNick">— the big shafati</span>
-            </p>
+            <h4 id="t_membersTitle">Team members</h4>
+            <ul class="muted" style="margin:8px 0 0; line-height:1.85; padding-left:1.25rem;">
+              <li>Ibrahim Ali</li>
+              <li>Ibrahim Abdelmagid</li>
+              <li>Youssef Ahmed</li>
+              <li>Mohamed Saleh</li>
+              <li>Mohamed Abdelmahmoud</li>
+              <li>Mohamed Abubaker</li>
+            </ul>
           </div>
 
           <div class="card" style="background:#0f1b34;">
@@ -245,7 +538,7 @@
       </article>
     </section>
   </main>
-
+</body>
   <footer class="muted" style="text-align:center; padding:18px 16px 28px;">
     <button id="aboutLink" class="footer-link" type="button">
       <span id="t_footer">Made by team feshata - all rights reserved to them.</span>
@@ -257,39 +550,104 @@
     const STORAGE_DISSERTATIONS_KEY = "pg_dissertations_v2";
     const STORAGE_SESSION_KEY = "pg_session_v2";
     const STORAGE_LANG_KEY = "pg_lang_v1";
+    const STORAGE_JOURNAL_KEY = "pg_journal_v1";
+    const STORAGE_FEATURES_KEY = "pg_features_v1";
+    const DEFAULT_DEADLINE = "2026-12-31T23:59:59";
 
     const el = {
       loginForm: document.getElementById("loginForm"),
       loginView: document.getElementById("loginView"),
+      signupView: document.getElementById("signupView"),
+      signupForm: document.getElementById("signupForm"),
       studentView: document.getElementById("studentView"),
+      supervisorDetailsView: document.getElementById("supervisorDetailsView"),
+      featuresView: document.getElementById("featuresView"),
       supervisorView: document.getElementById("supervisorView"),
+      journalView: document.getElementById("journalView"),
       aboutView: document.getElementById("aboutView"),
       role: document.getElementById("role"),
       name: document.getElementById("name"),
       password: document.getElementById("password"),
+      signupRole: document.getElementById("signupRole"),
+      signupName: document.getElementById("signupName"),
+      signupEmail: document.getElementById("signupEmail"),
+      signupPhone: document.getElementById("signupPhone"),
+      signupPassword: document.getElementById("signupPassword"),
+      signupConfirmPassword: document.getElementById("signupConfirmPassword"),
+      signupBackBtn: document.getElementById("signupBackBtn"),
       logoutBtn: document.getElementById("logoutBtn"),
       uploadForm: document.getElementById("uploadForm"),
       uploadBtn: document.getElementById("uploadBtn"),
-      fileName: document.getElementById("fileName"),
+      projectFile: document.getElementById("projectFile"),
+      browseFileBtn: document.getElementById("browseFileBtn"),
+      fileNameDisplay: document.getElementById("fileNameDisplay"),
       guestBtn: document.getElementById("guestBtn"),
+      registerBtn: document.getElementById("registerBtn"),
       guestReadOnly: document.getElementById("guestReadOnly"),
       studentBadge: document.getElementById("studentBadge"),
       studentTableBody: document.getElementById("studentTableBody"),
+      supervisorContactsList: document.getElementById("supervisorContactsList"),
+      openSupervisorDetailsBtn: document.getElementById("openSupervisorDetailsBtn"),
+      supervisorDetailsBackBtn: document.getElementById("supervisorDetailsBackBtn"),
+      featuresBtn: document.getElementById("featuresBtn"),
+      featuresBackBtn: document.getElementById("featuresBackBtn"),
       supervisorTableBody: document.getElementById("supervisorTableBody"),
       statusFilter: document.getElementById("statusFilter"),
+      journalBtn: document.getElementById("journalBtn"),
+      journalBackBtn: document.getElementById("journalBackBtn"),
+      journalForm: document.getElementById("journalForm"),
+      journalTitleInput: document.getElementById("journalTitleInput"),
+      journalBodyInput: document.getElementById("journalBodyInput"),
+      journalSaveBtn: document.getElementById("journalSaveBtn"),
+      journalSearchInput: document.getElementById("journalSearchInput"),
+      journalDateFilter: document.getElementById("journalDateFilter"),
+      journalEntriesList: document.getElementById("journalEntriesList"),
+      deadlineInfo: document.getElementById("deadlineInfo"),
       toast: document.getElementById("toast"),
       totalCount: document.getElementById("totalCount"),
       pendingCount: document.getElementById("pendingCount"),
       revisionCount: document.getElementById("revisionCount"),
-      approvedCount: document.getElementById("approvedCount")
+      approvedCount: document.getElementById("approvedCount"),
+      resetWorkBtn: document.getElementById("resetWorkBtn")
     };
 
-    el.langEN = document.getElementById("langEN");
-    el.langAR = document.getElementById("langAR");
-    el.langTA = document.getElementById("langTA");
+    el.langSelect = document.getElementById("langSelect");
+    el.themeToggleBtn = document.getElementById("themeToggleBtn");
     el.homeBtn = document.getElementById("homeBtn");
     el.aboutLink = document.getElementById("aboutLink");
     el.aboutBackBtn = document.getElementById("aboutBackBtn");
+    el.announceForm = document.getElementById("announceForm");
+    el.announceTitle = document.getElementById("announceTitle");
+    el.announceBody = document.getElementById("announceBody");
+    el.announceList = document.getElementById("announceList");
+    el.meetingForm = document.getElementById("meetingForm");
+    el.meetingDate = document.getElementById("meetingDate");
+    el.meetingTopic = document.getElementById("meetingTopic");
+    el.meetingList = document.getElementById("meetingList");
+    el.defenseForm = document.getElementById("defenseForm");
+    el.defenseDate = document.getElementById("defenseDate");
+    el.defenseRoom = document.getElementById("defenseRoom");
+    el.defenseView = document.getElementById("defenseView");
+    el.checklistText = document.getElementById("checklistText");
+    el.checklistResult = document.getElementById("checklistResult");
+    el.runChecklistBtn = document.getElementById("runChecklistBtn");
+    el.plagForm = document.getElementById("plagForm");
+    el.plagReportName = document.getElementById("plagReportName");
+    el.plagSimilarity = document.getElementById("plagSimilarity");
+    el.plagView = document.getElementById("plagView");
+    el.chapterProgressWrap = document.getElementById("chapterProgressWrap");
+    el.taskForm = document.getElementById("taskForm");
+    el.taskInput = document.getElementById("taskInput");
+    el.taskBoard = document.getElementById("taskBoard");
+    el.notifEmail = document.getElementById("notifEmail");
+    el.notifWhatsapp = document.getElementById("notifWhatsapp");
+    el.notifInApp = document.getElementById("notifInApp");
+    el.notifSaveBtn = document.getElementById("notifSaveBtn");
+    el.archiveToggle = document.getElementById("archiveToggle");
+    el.archiveSaveBtn = document.getElementById("archiveSaveBtn");
+    el.archiveStatus = document.getElementById("archiveStatus");
+    el.generateCertBtn = document.getElementById("generateCertBtn");
+    el.certList = document.getElementById("certList");
 
     const i18n = {
       en: {
@@ -298,7 +656,24 @@
         appTitle: "Dissertation System",
         logout: "Logout",
         loginTitle: "Login",
-        loginSubtitle: "Use any username/password and choose role.",
+        loginSubtitle: "Login with your account or create a new one.",
+        signupTitle: "Create Account",
+        signupSubtitle: "Fill all details to create your account.",
+        signupRoleLabel: "Role",
+        signupRoleStudent: "Student",
+        signupRoleSupervisor: "Supervisor",
+        signupNameLabel: "Full Name",
+        signupNamePh: "Enter full name",
+        signupEmailLabel: "Email",
+        signupEmailPh: "Enter email",
+        signupPhoneLabel: "Phone Number",
+        signupPhonePh: "Enter phone number",
+        signupPasswordLabel: "Password",
+        signupPasswordPh: "Create password",
+        signupConfirmPasswordLabel: "Confirm Password",
+        signupConfirmPasswordPh: "Re-enter password",
+        signupSubmitBtn: "Create Account",
+        signupBackBtn: "Back to Login",
         roleLabel: "Role",
         roleStudent: "Student",
         roleSupervisor: "Supervisor",
@@ -308,10 +683,34 @@
         passwordPh: "Enter password",
         loginBtn: "Login",
         guestBtn: "Skip as Guest",
+        registerBtn: "Register",
+        journalNav: "Journal",
+        journalTitle: "Journal",
+        journalSubtitle: "Write private progress notes and keep your research log.",
+        journalEntryTitle: "Entry title",
+        journalEntryBody: "Entry details",
+        journalTitlePh: "Weekly progress",
+        journalBodyPh: "Write your notes, blockers, and next steps...",
+        journalSave: "Save entry",
+        journalMyEntries: "My Journal Entries",
+        journalSearchPh: "Search journal...",
+        journalFilterAll: "All time",
+        journalFilterToday: "Today",
+        journalFilter7d: "Last 7 days",
+        journalEmpty: "No journal entries yet.",
+        journalDelete: "Delete",
+        journalBack: "Return",
         uploadTitle: "Upload New Version",
-        uploadSubtitle: "Upload a new dissertation version. Status starts as Pending.",
+        uploadSubtitle: "Upload a new dissertation version (any file type). Status starts as Pending.",
         fileLabel: "Dissertation File",
         filePh: "e.g. thesis_v2.pdf",
+        browseFile: "Choose file",
+        noFileChosen: "No file chosen",
+        supervisorAttachHint: "Optional attachment (picker)",
+        openFile: "Open file",
+        toastFileMissing: "No saved file to open. Upload again in this browser.",
+        toastPopupBlocked: "Allow pop-ups to open the file in a new tab.",
+        toastFileOpenFailed: "Could not open the file.",
         uploadBtn: "Upload",
         guestReadOnly: "Guest mode is read-only. Login as student to upload new files.",
         progressTitle: "My Progress",
@@ -319,7 +718,26 @@
         pending: "Pending",
         needsRevision: "Needs Revision",
         approved: "Approved",
+        supervisorContactsTitle: "Supervisor Contacts",
+        supervisorContactsSubtitle: "Contact your supervisors directly.",
+        viewSupervisorDetailsBtn: "View Supervisor Details",
+        supervisorDetailsBackBtn: "Return",
+        contactEmail: "Email",
+        contactPhone: "Phone",
+        contactEmailBtn: "Email",
+        contactCallBtn: "Call",
+        contactWhatsappBtn: "WhatsApp",
+        contactCopyEmailBtn: "Copy Email",
+        contactCopyPhoneBtn: "Copy Phone",
+        contactGmailBtn: "Open in Gmail",
+        toastCopied: "Copied.",
+        noSupervisorContacts: "No supervisor contacts available yet.",
         mySubmissions: "My Submissions",
+        resetWorkBtn: "Reset all my work",
+        resetWorkConfirm: "Delete all your submissions and stored files from this browser? Supervisors will no longer see them here. This cannot be undone.",
+        resetWorkDone: "All your submissions and stored files were removed.",
+        resetWorkEmpty: "You have no submissions to remove.",
+        resetWorkGuest: "Guests cannot reset work. Log in as a student.",
         thFile: "File",
         thVersion: "Version",
         thStatus: "Status",
@@ -341,6 +759,24 @@
         unknown: "unknown",
         toastMissingCreds: "Enter username and password.",
         toastLoginOk: "Logged in successfully.",
+        toastRegisterOk: "Account created. You can log in now.",
+        toastUserExists: "This username already exists for that role.",
+        toastNotRegistered: "This account is not registered yet. Press Register first.",
+        toastRedirectSignup: "Account not found. Please complete sign up first.",
+        toastInvalidCreds: "Invalid username or password.",
+        toastSignupMissing: "Please complete all sign up fields.",
+        toastSignupEmailInvalid: "Please enter a valid email address.",
+        toastSignupPhoneInvalid: "Please enter a valid phone number.",
+        toastSignupPasswordWeak: "Password must be at least 6 characters.",
+        toastSignupPasswordMismatch: "Passwords do not match.",
+        toastEmailExists: "This email is already registered.",
+        deadlineLabel: "Submission deadline",
+        deadlinePassed: "Deadline passed",
+        deadlineRemaining: "Time left",
+        lateTag: "Late",
+        toastJournalSaved: "Journal entry saved.",
+        toastJournalDeleted: "Journal entry deleted.",
+        toastJournalNeedLogin: "Log in first to use Journal.",
         toastGuestOn: "Guest mode enabled.",
         toastGuestRO: "Guest mode is read-only.",
         toastUploadOk: "File uploaded successfully.",
@@ -356,9 +792,7 @@
         ,aboutBack: "Return to Dashboard"
         ,teamTitle: "Team feshata"
         ,teamBody: "We are a small student team passionate about building practical systems that simplify real university workflows."
-        ,leaderTitle: "Team Leader"
-        ,leaderName: "Ibrahim"
-        ,leaderNick: "— the big shafati"
+        ,membersTitle: "Team members"
         ,humbleTitle: "A humble word"
         ,humbleBody: "We built this project with respect for learning and teamwork. If you find any issues, we welcome feedback and will keep improving."
       },
@@ -368,7 +802,24 @@
         appTitle: "نظام الرسائل",
         logout: "تسجيل خروج",
         loginTitle: "تسجيل الدخول",
-        loginSubtitle: "استخدم أي اسم مستخدم/كلمة مرور واختر الدور.",
+        loginSubtitle: "سجّل الدخول بحسابك أو أنشئ حسابًا جديدًا.",
+        signupTitle: "إنشاء حساب",
+        signupSubtitle: "املأ جميع البيانات لإنشاء حسابك.",
+        signupRoleLabel: "الدور",
+        signupRoleStudent: "طالب",
+        signupRoleSupervisor: "مشرف",
+        signupNameLabel: "الاسم الكامل",
+        signupNamePh: "اكتب الاسم الكامل",
+        signupEmailLabel: "البريد الإلكتروني",
+        signupEmailPh: "اكتب البريد الإلكتروني",
+        signupPhoneLabel: "رقم الهاتف",
+        signupPhonePh: "اكتب رقم الهاتف",
+        signupPasswordLabel: "كلمة المرور",
+        signupPasswordPh: "أنشئ كلمة مرور",
+        signupConfirmPasswordLabel: "تأكيد كلمة المرور",
+        signupConfirmPasswordPh: "أعد كتابة كلمة المرور",
+        signupSubmitBtn: "إنشاء حساب",
+        signupBackBtn: "العودة لتسجيل الدخول",
         roleLabel: "الدور",
         roleStudent: "طالب",
         roleSupervisor: "مشرف",
@@ -378,10 +829,18 @@
         passwordPh: "اكتب كلمة المرور",
         loginBtn: "دخول",
         guestBtn: "تخطي كضيف",
+        registerBtn: "تسجيل جديد",
         uploadTitle: "رفع نسخة جديدة",
-        uploadSubtitle: "ارفع نسخة جديدة من الرسالة. الحالة تبدأ (قيد الانتظار).",
+        uploadSubtitle: "ارفع نسخة جديدة من الرسالة (أي نوع ملف). الحالة تبدأ (قيد الانتظار).",
         fileLabel: "ملف الرسالة",
         filePh: "مثال: thesis_v2.pdf",
+        browseFile: "اختيار ملف",
+        noFileChosen: "لم يتم اختيار ملف",
+        supervisorAttachHint: "مرفق اختياري",
+        openFile: "فتح الملف",
+        toastFileMissing: "لا يوجد ملف محفوظ. ارفع من جديد في هذا المتصفح.",
+        toastPopupBlocked: "اسمح بالنوافذ المنبثقة لفتح الملف.",
+        toastFileOpenFailed: "تعذر فتح الملف.",
         uploadBtn: "رفع",
         guestReadOnly: "وضع الضيف للعرض فقط. سجل كطالب لرفع الملفات.",
         progressTitle: "التقدم",
@@ -389,7 +848,26 @@
         pending: "قيد الانتظار",
         needsRevision: "يحتاج تعديل",
         approved: "معتمد",
+        supervisorContactsTitle: "بيانات المشرفين",
+        supervisorContactsSubtitle: "تواصل مع المشرفين مباشرة.",
+        viewSupervisorDetailsBtn: "عرض بيانات المشرفين",
+        supervisorDetailsBackBtn: "رجوع",
+        contactEmail: "البريد الإلكتروني",
+        contactPhone: "رقم الهاتف",
+        contactEmailBtn: "إيميل",
+        contactCallBtn: "اتصال",
+        contactWhatsappBtn: "واتساب",
+        contactCopyEmailBtn: "نسخ الإيميل",
+        contactCopyPhoneBtn: "نسخ الهاتف",
+        contactGmailBtn: "فتح في Gmail",
+        toastCopied: "تم النسخ.",
+        noSupervisorContacts: "لا توجد بيانات تواصل للمشرفين حتى الآن.",
         mySubmissions: "ملفاتي المرفوعة",
+        resetWorkBtn: "مسح كل عملي",
+        resetWorkConfirm: "حذف كل تسليماتك والملفات المخزنة في هذا المتصفح؟ لن يراها المشرفون هنا. لا يمكن التراجع.",
+        resetWorkDone: "تمت إزالة كل تسليماتك والملفات المخزنة.",
+        resetWorkEmpty: "لا توجد تسليمات لحذفها.",
+        resetWorkGuest: "الضيف لا يمكنه المسح. سجّل كطالب.",
         thFile: "الملف",
         thVersion: "النسخة",
         thStatus: "الحالة",
@@ -411,6 +889,21 @@
         unknown: "غير معروف",
         toastMissingCreds: "اكتب اسم المستخدم وكلمة المرور.",
         toastLoginOk: "تم تسجيل الدخول بنجاح.",
+        toastRegisterOk: "تم إنشاء الحساب. يمكنك تسجيل الدخول الآن.",
+        toastUserExists: "اسم المستخدم موجود بالفعل لهذا الدور.",
+        toastNotRegistered: "هذا الحساب غير مسجل بعد. اضغط تسجيل جديد أولاً.",
+        toastRedirectSignup: "الحساب غير موجود. أكمل إنشاء الحساب أولاً.",
+        toastInvalidCreds: "اسم المستخدم أو كلمة المرور غير صحيحة.",
+        toastSignupMissing: "يرجى تعبئة جميع حقول إنشاء الحساب.",
+        toastSignupEmailInvalid: "يرجى إدخال بريد إلكتروني صحيح.",
+        toastSignupPhoneInvalid: "يرجى إدخال رقم هاتف صحيح.",
+        toastSignupPasswordWeak: "كلمة المرور يجب أن تكون 6 أحرف على الأقل.",
+        toastSignupPasswordMismatch: "كلمتا المرور غير متطابقتين.",
+        toastEmailExists: "هذا البريد الإلكتروني مسجل بالفعل.",
+        deadlineLabel: "موعد التسليم النهائي",
+        deadlinePassed: "انتهى الموعد النهائي",
+        deadlineRemaining: "الوقت المتبقي",
+        lateTag: "متأخر",
         toastGuestOn: "تم تفعيل وضع الضيف.",
         toastGuestRO: "وضع الضيف للعرض فقط.",
         toastUploadOk: "تم رفع الملف بنجاح.",
@@ -426,9 +919,7 @@
         aboutBack: "العودة للداشبورد",
         teamTitle: "فريق feshata",
         teamBody: "نحن فريق طلابي صغير شغوف ببناء أنظمة عملية تسهّل الإجراءات الجامعية وتُنظم سير العمل.",
-        leaderTitle: "قائد الفريق",
-        leaderName: "Ibrahim",
-        leaderNick: "— the big shafati",
+        membersTitle: "أعضاء الفريق",
         humbleTitle: "كلمة تواضع",
         humbleBody: "بنينا هذا المشروع بروح التعلم والعمل الجماعي. إذا لاحظت أي مشكلة، يسعدنا استقبال ملاحظاتك وسنواصل التطوير."
       },
@@ -438,7 +929,24 @@
         appTitle: "ஆய்வுக்கட்டுரை அமைப்பு",
         logout: "வெளியேறு",
         loginTitle: "உள்நுழை",
-        loginSubtitle: "ஏதேனும் பயனர் பெயர்/கடவுச்சொல் பயன்படுத்தி பாத்திரத்தை தேர்வு செய்யவும்.",
+        loginSubtitle: "உங்கள் கணக்கில் உள்நுழையவும் அல்லது புதிய கணக்கை உருவாக்கவும்.",
+        signupTitle: "கணக்கு உருவாக்கு",
+        signupSubtitle: "உங்கள் கணக்கை உருவாக்க அனைத்து விவரங்களையும் நிரப்பவும்.",
+        signupRoleLabel: "பாத்திரம்",
+        signupRoleStudent: "மாணவர்",
+        signupRoleSupervisor: "மேற்பார்வையாளர்",
+        signupNameLabel: "முழு பெயர்",
+        signupNamePh: "முழு பெயரை உள்ளிடவும்",
+        signupEmailLabel: "மின்னஞ்சல்",
+        signupEmailPh: "மின்னஞ்சலை உள்ளிடவும்",
+        signupPhoneLabel: "தொலைபேசி எண்",
+        signupPhonePh: "தொலைபேசி எண்ணை உள்ளிடவும்",
+        signupPasswordLabel: "கடவுச்சொல்",
+        signupPasswordPh: "கடவுச்சொல் உருவாக்கவும்",
+        signupConfirmPasswordLabel: "கடவுச்சொல் உறுதிப்படுத்து",
+        signupConfirmPasswordPh: "கடவுச்சொல்லை மீண்டும் உள்ளிடவும்",
+        signupSubmitBtn: "கணக்கு உருவாக்கு",
+        signupBackBtn: "உள்நுழை பக்கத்துக்கு திரும்பு",
         roleLabel: "பாத்திரம்",
         roleStudent: "மாணவர்",
         roleSupervisor: "மேற்பார்வையாளர்",
@@ -448,10 +956,18 @@
         passwordPh: "கடவுச்சொல்லை உள்ளிடுங்கள்",
         loginBtn: "உள்நுழை",
         guestBtn: "விருந்தினராக தொடரவும்",
+        registerBtn: "பதிவு செய்",
         uploadTitle: "புதிய பதிப்பு பதிவேற்றம்",
-        uploadSubtitle: "ஆய்வுக்கட்டுரையின் புதிய பதிப்பை பதிவேற்றவும். நிலை Pending ஆக தொடங்கும்.",
+        uploadSubtitle: "ஆய்வுக்கட்டுரையின் புதிய பதிப்பை பதிவேற்றவும் (எந்த கோப்பு வகையும்). நிலை Pending ஆக தொடங்கும்.",
         fileLabel: "ஆய்வுக்கட்டுரை கோப்பு",
         filePh: "எ.கா: thesis_v2.pdf",
+        browseFile: "கோப்பைத் தேர்வு",
+        noFileChosen: "கோப்பு தேர்வு செய்யப்படவில்லை",
+        supervisorAttachHint: "விருப்ப கோப்பு",
+        openFile: "கோப்பைத் திற",
+        toastFileMissing: "சேமித்த கோப்பு இல்லை. இந்த உலாவியில் மீண்டும் பதிவேற்றவும்.",
+        toastPopupBlocked: "புதிய தாவலில் திறக்க மேல்மட்டங்களை அனுமதிக்கவும்.",
+        toastFileOpenFailed: "கோப்பைத் திறக்க முடியவில்லை.",
         uploadBtn: "பதிவேற்றம்",
         guestReadOnly: "விருந்தினர் முறை வாசிப்பிற்கு மட்டும். பதிவேற்ற மாணவராக உள்நுழையவும்.",
         progressTitle: "என் முன்னேற்றம்",
@@ -459,7 +975,26 @@
         pending: "Pending",
         needsRevision: "திருத்தம் தேவை",
         approved: "அங்கீகரிக்கப்பட்டது",
+        supervisorContactsTitle: "மேற்பார்வையாளர் தொடர்புகள்",
+        supervisorContactsSubtitle: "உங்கள் மேற்பார்வையாளர்களை நேரடியாக தொடர்பு கொள்ளுங்கள்.",
+        viewSupervisorDetailsBtn: "மேற்பார்வையாளர் விவரங்களை காட்டு",
+        supervisorDetailsBackBtn: "திரும்பு",
+        contactEmail: "மின்னஞ்சல்",
+        contactPhone: "தொலைபேசி",
+        contactEmailBtn: "மின்னஞ்சல்",
+        contactCallBtn: "அழை",
+        contactWhatsappBtn: "வாட்ஸ்அப்",
+        contactCopyEmailBtn: "மின்னஞ்சலை நகலெடு",
+        contactCopyPhoneBtn: "தொலைபேசியை நகலெடு",
+        contactGmailBtn: "Gmail-ல் திற",
+        toastCopied: "நகலெடுக்கப்பட்டது.",
+        noSupervisorContacts: "இன்னும் மேற்பார்வையாளர் தொடர்பு தகவல் இல்லை.",
         mySubmissions: "என் சமர்ப்பிப்புகள்",
+        resetWorkBtn: "என் வேலையை மீட்டமை",
+        resetWorkConfirm: "இந்த உலாவியில் உங்கள் எல்லா சமர்ப்பிப்புகளும் சேமித்த கோப்புகளும் நீக்கப்படும். மேற்பார்வையாளர்கள் இனி அவற்றை இங்கே காண மாட்டார்கள். திரும்ப முடியாது.",
+        resetWorkDone: "உங்கள் சமர்ப்பிப்புகளும் சேமித்த கோப்புகளும் நீக்கப்பட்டன.",
+        resetWorkEmpty: "நீக்க சமர்ப்பிப்புகள் இல்லை.",
+        resetWorkGuest: "விருந்தினர் மீட்டமைக்க முடியாது. மாணவராக உள்நுழையவும்.",
         thFile: "கோப்பு",
         thVersion: "பதிப்பு",
         thStatus: "நிலை",
@@ -481,6 +1016,21 @@
         unknown: "தெரியாது",
         toastMissingCreds: "பயனர் பெயரும் கடவுச்சொல்லும் உள்ளிடுங்கள்.",
         toastLoginOk: "வெற்றிகரமாக உள்நுழைந்தது.",
+        toastRegisterOk: "கணக்கு உருவாக்கப்பட்டது. இப்போது உள்நுழையலாம்.",
+        toastUserExists: "இந்த பாத்திரத்திற்கான பயனர் பெயர் ஏற்கனவே உள்ளது.",
+        toastNotRegistered: "இந்த கணக்கு இன்னும் பதிவு செய்யப்படவில்லை. முதலில் பதிவு செய் அழுத்தவும்.",
+        toastRedirectSignup: "கணக்கு கிடைக்கவில்லை. முதலில் பதிவு முடிக்கவும்.",
+        toastInvalidCreds: "பயனர் பெயர் அல்லது கடவுச்சொல் தவறு.",
+        toastSignupMissing: "பதிவு படிவத்தின் அனைத்து புலங்களையும் நிரப்பவும்.",
+        toastSignupEmailInvalid: "சரியான மின்னஞ்சலை உள்ளிடவும்.",
+        toastSignupPhoneInvalid: "சரியான தொலைபேசி எண்ணை உள்ளிடவும்.",
+        toastSignupPasswordWeak: "கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்.",
+        toastSignupPasswordMismatch: "இரு கடவுச்சொற்களும் பொருந்தவில்லை.",
+        toastEmailExists: "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது.",
+        deadlineLabel: "சமர்ப்பிப்பு கடைசி தேதி",
+        deadlinePassed: "கடைசி தேதி கடந்துவிட்டது",
+        deadlineRemaining: "மீதமுள்ள நேரம்",
+        lateTag: "தாமதம்",
         toastGuestOn: "விருந்தினர் முறை இயக்கு.",
         toastGuestRO: "விருந்தினர் முறை வாசிப்பிற்கு மட்டும்.",
         toastUploadOk: "கோப்பு பதிவேற்றம் வெற்றி.",
@@ -496,9 +1046,7 @@
         aboutBack: "டாஷ்போர்டுக்கு திரும்பு",
         teamTitle: "Team feshata",
         teamBody: "பல்கலைக்கழக செயல்முறைகளை எளிமைப்படுத்தும் நடைமுறை அமைப்புகளை உருவாக்க ஆர்வமுள்ள சிறிய மாணவர் குழு நாங்கள்.",
-        leaderTitle: "குழு தலைவர்",
-        leaderName: "Ibrahim",
-        leaderNick: "— the big shafati",
+        membersTitle: "குழு உறுப்பினர்கள்",
         humbleTitle: "ஒரு தாழ்மையான வார்த்தை",
         humbleBody: "கற்றலும் குழு பணியும் மதிப்புடன் இந்த திட்டத்தை உருவாக்கினோம். ஏதேனும் பிழைகள் இருந்தால், உங்கள் கருத்துகளை வரவேற்கிறோம்; மேலும் மேம்படுத்துவோம்."
       }
@@ -507,10 +1055,19 @@
     let currentLang = readJSON(STORAGE_LANG_KEY, "en");
     if (!i18n[currentLang]) currentLang = "en";
 
+    /** Updates the label next to the student file picker (chosen name or “No file chosen”). */
+    function updateStudentFileDisplay() {
+      const t = i18n[currentLang] || i18n.en;
+      if (!el.fileNameDisplay || !el.projectFile) return;
+      const f = el.projectFile.files[0];
+      el.fileNameDisplay.textContent = f ? f.name : t.noFileChosen;
+    }
+
     function applyLanguage(lang) {
       if (!i18n[lang]) return;
       currentLang = lang;
       saveJSON(STORAGE_LANG_KEY, currentLang);
+      if (el.langSelect) el.langSelect.value = currentLang;
 
       const t = i18n[lang];
       document.documentElement.lang = lang === "ar" ? "ar" : (lang === "ta" ? "ta" : "en");
@@ -522,12 +1079,25 @@
       el.logoutBtn.textContent = t.logout;
       setText("t_loginTitle", t.loginTitle);
       setText("t_loginSubtitle", t.loginSubtitle);
+      setText("t_signupTitle", t.signupTitle || i18n.en.signupTitle);
+      setText("t_signupSubtitle", t.signupSubtitle || i18n.en.signupSubtitle);
+      setText("t_signupRoleLabel", t.signupRoleLabel || i18n.en.signupRoleLabel);
+      setText("t_signupRoleStudent", t.signupRoleStudent || i18n.en.signupRoleStudent);
+      setText("t_signupRoleSupervisor", t.signupRoleSupervisor || i18n.en.signupRoleSupervisor);
+      setText("t_signupNameLabel", t.signupNameLabel || i18n.en.signupNameLabel);
+      setText("t_signupEmailLabel", t.signupEmailLabel || i18n.en.signupEmailLabel);
+      setText("t_signupPhoneLabel", t.signupPhoneLabel || i18n.en.signupPhoneLabel);
+      setText("t_signupPasswordLabel", t.signupPasswordLabel || i18n.en.signupPasswordLabel);
+      setText("t_signupConfirmPasswordLabel", t.signupConfirmPasswordLabel || i18n.en.signupConfirmPasswordLabel);
+      setText("t_signupSubmitBtn", t.signupSubmitBtn || i18n.en.signupSubmitBtn);
       setText("t_roleLabel", t.roleLabel);
       setText("t_roleStudent", t.roleStudent);
       setText("t_roleSupervisor", t.roleSupervisor);
+      if (el.journalBtn) el.journalBtn.textContent = t.journalNav || i18n.en.journalNav;
       setText("t_nameLabel", t.nameLabel);
       setText("t_passwordLabel", t.passwordLabel);
       setText("t_loginBtn", t.loginBtn);
+      el.registerBtn.textContent = t.registerBtn || "Register";
       el.guestBtn.textContent = t.guestBtn;
       setText("t_uploadTitle", t.uploadTitle);
       setText("t_uploadSubtitle", t.uploadSubtitle);
@@ -539,7 +1109,12 @@
       setText("t_pendingLabel", t.pending);
       setText("t_revisionLabel", t.needsRevision);
       setText("t_approvedLabel", t.approved);
+      setText("t_supervisorContactsTitle", t.supervisorContactsTitle || i18n.en.supervisorContactsTitle);
+      setText("t_supervisorContactsSubtitle", t.supervisorContactsSubtitle || i18n.en.supervisorContactsSubtitle);
+      if (el.openSupervisorDetailsBtn) el.openSupervisorDetailsBtn.textContent = t.viewSupervisorDetailsBtn || i18n.en.viewSupervisorDetailsBtn;
+      if (el.supervisorDetailsBackBtn) el.supervisorDetailsBackBtn.textContent = t.supervisorDetailsBackBtn || i18n.en.supervisorDetailsBackBtn;
       setText("t_mySubmissions", t.mySubmissions);
+      if (el.resetWorkBtn) el.resetWorkBtn.textContent = t.resetWorkBtn;
       setText("t_thFile", t.thFile);
       setText("t_thVersion", t.thVersion);
       setText("t_thStatus", t.thStatus);
@@ -566,18 +1141,37 @@
       setText("t_aboutSubtitle", t.aboutSubtitle);
       setText("t_teamTitle", t.teamTitle);
       setText("t_teamBody", t.teamBody);
-      setText("t_leaderTitle", t.leaderTitle);
-      setText("t_leaderName", t.leaderName);
-      setText("t_leaderNick", t.leaderNick);
+      setText("t_membersTitle", t.membersTitle);
       setText("t_humbleTitle", t.humbleTitle);
       setText("t_humbleBody", t.humbleBody);
+      setText("t_journalTitle", t.journalTitle || i18n.en.journalTitle);
+      setText("t_journalSubtitle", t.journalSubtitle || i18n.en.journalSubtitle);
+      setText("t_journalEntryTitle", t.journalEntryTitle || i18n.en.journalEntryTitle);
+      setText("t_journalEntryBody", t.journalEntryBody || i18n.en.journalEntryBody);
+      setText("t_journalMyEntries", t.journalMyEntries || i18n.en.journalMyEntries);
+      if (el.journalTitleInput) el.journalTitleInput.placeholder = t.journalTitlePh || i18n.en.journalTitlePh;
+      if (el.journalBodyInput) el.journalBodyInput.placeholder = t.journalBodyPh || i18n.en.journalBodyPh;
+      if (el.journalSaveBtn) el.journalSaveBtn.textContent = t.journalSave || i18n.en.journalSave;
+      if (el.journalBackBtn) el.journalBackBtn.textContent = t.journalBack || i18n.en.journalBack;
       if (el.aboutBackBtn) el.aboutBackBtn.textContent = t.aboutBack;
       const footer = document.getElementById("t_footer");
       if (footer) footer.textContent = t.footer;
 
       el.name.placeholder = t.namePh;
       el.password.placeholder = t.passwordPh;
-      el.fileName.placeholder = t.filePh;
+      if (el.signupName) el.signupName.placeholder = t.signupNamePh || i18n.en.signupNamePh;
+      if (el.signupEmail) el.signupEmail.placeholder = t.signupEmailPh || i18n.en.signupEmailPh;
+      if (el.signupPhone) el.signupPhone.placeholder = t.signupPhonePh || i18n.en.signupPhonePh;
+      if (el.signupPassword) el.signupPassword.placeholder = t.signupPasswordPh || i18n.en.signupPasswordPh;
+      if (el.signupConfirmPassword) el.signupConfirmPassword.placeholder = t.signupConfirmPasswordPh || i18n.en.signupConfirmPasswordPh;
+      if (el.signupBackBtn) el.signupBackBtn.textContent = t.signupBackBtn || i18n.en.signupBackBtn;
+      if (el.journalSearchInput) el.journalSearchInput.placeholder = t.journalSearchPh || i18n.en.journalSearchPh;
+      setText("journalFilterAll", t.journalFilterAll || i18n.en.journalFilterAll);
+      setText("journalFilterToday", t.journalFilterToday || i18n.en.journalFilterToday);
+      setText("journalFilter7d", t.journalFilter7d || i18n.en.journalFilter7d);
+      el.browseFileBtn.textContent = t.browseFile;
+      updateStudentFileDisplay();
+      updateDeadlineInfo();
 
       // Update dynamic placeholders inside supervisor table (if visible)
       renderSupervisorTable();
@@ -585,7 +1179,9 @@
       // Update badge text if student view is open
       if (currentUser && currentUser.role === "student") {
         el.studentBadge.textContent = currentUser.isGuest ? t.badgeGuest : t.badgeStudent;
+        renderSupervisorContacts();
       }
+      if (currentUser && !el.journalView.classList.contains("hidden")) renderJournalEntries();
     }
 
     function readJSON(key, fallback) {
@@ -604,6 +1200,52 @@
     let users = readJSON(STORAGE_USERS_KEY, { students: [], supervisors: [] });
     let dissertations = readJSON(STORAGE_DISSERTATIONS_KEY, []);
     let currentUser = readJSON(STORAGE_SESSION_KEY, null);
+    let journalEntries = readJSON(STORAGE_JOURNAL_KEY, []);
+    let featuresData = readJSON(STORAGE_FEATURES_KEY, {
+      announcements: [],
+      meetings: [],
+      defense: null,
+      plagiarism: {},
+      chapterProgress: {},
+      tasks: [],
+      notifications: {},
+      certificates: [],
+      archiveMode: false,
+      theme: "dark"
+    });
+
+    featuresData.announcements = Array.isArray(featuresData.announcements) ? featuresData.announcements : [];
+    featuresData.meetings = Array.isArray(featuresData.meetings) ? featuresData.meetings : [];
+    featuresData.plagiarism = featuresData.plagiarism || {};
+    featuresData.chapterProgress = featuresData.chapterProgress || {};
+    featuresData.tasks = Array.isArray(featuresData.tasks) ? featuresData.tasks : [];
+    featuresData.notifications = featuresData.notifications || {};
+    featuresData.certificates = Array.isArray(featuresData.certificates) ? featuresData.certificates : [];
+    if (typeof featuresData.archiveMode !== "boolean") featuresData.archiveMode = false;
+    if (!featuresData.theme) featuresData.theme = "dark";
+    let journalSearchQuery = "";
+    let journalDateFilterValue = "all";
+
+    /** localStorage can deserialize ids as strings; IndexedDB keys must match numbers used on save. */
+    function normalizeStoredData() {
+      if (!Array.isArray(users.students)) users.students = [];
+      if (!Array.isArray(users.supervisors)) users.supervisors = [];
+      ["students", "supervisors"].forEach((k) => {
+        const pool = users[k];
+        pool.forEach((u) => {
+          u.id = Number(u.id);
+        });
+      });
+      dissertations.forEach((d) => {
+        d.id = Number(d.id);
+        d.studentId = Number(d.studentId);
+        if (d.version != null) d.version = Number(d.version);
+      });
+      if (currentUser && currentUser.id != null) {
+        currentUser.id = Number(currentUser.id);
+      }
+    }
+    normalizeStoredData();
 
     function statusClass(status) {
       const map = { "Pending":"pending", "Under Review":"under-review", "Needs Revision":"needs-revision", "Approved":"approved" };
@@ -627,41 +1269,413 @@
       setTimeout(() => el.toast.classList.add("hidden"), 2200);
     }
 
+    /** IndexedDB: store real File/Blob per submission so supervisors can open it in a new tab (browser-only demo). */
+    const IDB_NAME = "pg_dissertation_blobs_v1";
+    const IDB_STORE = "files";
+    const IDB_VER = 1;
+
+    /** Guesses MIME so PDFs, images, video, audio, zip, Office docs open correctly in a new tab from a blob URL. */
+    function guessMimeFromFileName(name) {
+      const ext = (String(name).split(".").pop() || "").toLowerCase();
+      const map = {
+        pdf: "application/pdf",
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+        webp: "image/webp", svg: "image/svg+xml", bmp: "image/bmp", ico: "image/x-icon",
+        tif: "image/tiff", tiff: "image/tiff", avif: "image/avif", heic: "image/heic",
+        mp4: "video/mp4", webm: "video/webm", ogv: "video/ogg", mov: "video/quicktime", mkv: "video/x-matroska",
+        mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", flac: "audio/flac",
+        txt: "text/plain", csv: "text/csv", json: "application/json", xml: "application/xml",
+        html: "text/html", htm: "text/html", css: "text/css", md: "text/markdown",
+        js: "text/javascript", mjs: "text/javascript", ts: "text/plain", py: "text/plain",
+        zip: "application/zip", rar: "application/x-rar-compressed",
+        "7z": "application/x-7z-compressed", gz: "application/gzip", tar: "application/x-tar",
+        doc: "application/msword",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xls: "application/vnd.ms-excel",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ppt: "application/vnd.ms-powerpoint",
+        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        odt: "application/vnd.oasis.opendocument.text",
+        rtf: "application/rtf"
+      };
+      return map[ext] || "";
+    }
+
+    function openDissertationDb() {
+      if (!window.indexedDB) {
+        return Promise.reject(new Error("IndexedDB unavailable (try a normal browser window, not private mode with IDB disabled)"));
+      }
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, IDB_VER);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE, { keyPath: "id" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function saveDissertationFile(id, file) {
+      const numericId = Number(id);
+      const mimeType =
+        file.type && file.type !== ""
+          ? file.type
+          : guessMimeFromFileName(file.name);
+      return openDissertationDb().then((db) => new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const req = tx.objectStore(IDB_STORE).put({
+          id: numericId,
+          blob: file,
+          mimeType: mimeType || ""
+        });
+        req.onerror = () => reject(req.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("IndexedDB write failed"));
+      }));
+    }
+
+    /** Returns { blob, mimeType } or null (mimeType may be empty for older stored rows). */
+    function getDissertationFile(id) {
+      const numericId = Number(id);
+      return openDissertationDb().then((db) => new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const r = tx.objectStore(IDB_STORE).get(numericId);
+        r.onsuccess = () => {
+          const row = r.result;
+          if (!row || !row.blob) {
+            resolve(null);
+            return;
+          }
+          resolve({ blob: row.blob, mimeType: row.mimeType || "" });
+        };
+        r.onerror = () => reject(r.error);
+      }));
+    }
+
+    /** Removes stored file blobs for the given dissertation ids (student reset / cleanup). */
+    function deleteDissertationFilesFromIdb(ids) {
+      const unique = [...new Set(ids.map((id) => Number(id)).filter((n) => Number.isFinite(n)))];
+      if (!unique.length) return Promise.resolve();
+      if (!window.indexedDB) return Promise.resolve();
+      return openDissertationDb().then((db) => new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const store = tx.objectStore(IDB_STORE);
+        unique.forEach((id) => {
+          store.delete(id);
+        });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("IndexedDB delete failed"));
+      }));
+    }
+
+    /**
+     * Opens a blob URL in a new tab (works reliably from a click handler; avoids broken window.open feature strings).
+     */
+    function openBlobUrlInNewTab(url) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.style.cssText = "position:fixed;left:-9999px;top:0;";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function openDissertationFileInBrowser(rawId) {
+      const t = i18n[currentLang] || i18n.en;
+      const id = Number(rawId);
+      if (!Number.isFinite(id)) {
+        showToast(t.toastFileOpenFailed);
+        return;
+      }
+      const meta = dissertations.find((d) => Number(d.id) === id);
+      getDissertationFile(id)
+        .then((rec) => {
+          if (!rec || !rec.blob) {
+            showToast(t.toastFileMissing);
+            return;
+          }
+          let mime = rec.mimeType;
+          if (!mime || mime === "application/octet-stream") {
+            mime = guessMimeFromFileName(meta && meta.fileName) || rec.blob.type || "";
+          }
+          if (!mime) {
+            mime = "application/octet-stream";
+          }
+          const typedBlob = new Blob([rec.blob], { type: mime });
+          const url = URL.createObjectURL(typedBlob);
+          openBlobUrlInNewTab(url);
+          setTimeout(() => URL.revokeObjectURL(url), 600000);
+        })
+        .catch((err) => {
+          console.error(err);
+          showToast(t.toastFileOpenFailed);
+        });
+    }
+
     function nowDate() {
       return new Date().toLocaleString();
     }
 
+    function deadlineDate() {
+      return new Date(DEFAULT_DEADLINE);
+    }
+
+    function formatCountdown(ms) {
+      if (ms <= 0) return "00d 00h 00m";
+      const d = Math.floor(ms / (1000 * 60 * 60 * 24));
+      const h = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      return `${String(d).padStart(2, "0")}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m`;
+    }
+
+    function updateDeadlineInfo() {
+      if (!el.deadlineInfo) return;
+      const t = i18n[currentLang] || i18n.en;
+      const deadline = deadlineDate();
+      const remaining = deadline.getTime() - Date.now();
+      if (remaining <= 0) {
+        el.deadlineInfo.textContent = `${t.deadlineLabel || i18n.en.deadlineLabel}: ${deadline.toLocaleString()} (${t.deadlinePassed || i18n.en.deadlinePassed})`;
+      } else {
+        el.deadlineInfo.textContent = `${t.deadlineLabel || i18n.en.deadlineLabel}: ${deadline.toLocaleString()} - ${t.deadlineRemaining || i18n.en.deadlineRemaining}: ${formatCountdown(remaining)}`;
+      }
+    }
+
+    function isSubmissionLate(item) {
+      const ts = Number(item.createdAtTs || 0);
+      if (!ts) return false;
+      return ts > deadlineDate().getTime();
+    }
+
     function resetViews() {
       el.loginView.classList.add("hidden");
+      el.signupView.classList.add("hidden");
       el.studentView.classList.add("hidden");
+      el.supervisorDetailsView.classList.add("hidden");
+      el.featuresView.classList.add("hidden");
       el.supervisorView.classList.add("hidden");
+      el.journalView.classList.add("hidden");
       el.aboutView.classList.add("hidden");
+    }
+
+    function canManageAcademicFlow() {
+      return Boolean(currentUser && (currentUser.role === "supervisor"));
+    }
+
+    function showFeaturesView() {
+      if (!currentUser) return;
+      resetViews();
+      el.featuresView.classList.remove("hidden");
+      el.logoutBtn.classList.remove("hidden");
+      renderFeatureHub();
+    }
+
+    function renderFeatureHub() {
+      renderAnnouncements();
+      renderMeetings();
+      renderDefense();
+      renderPlagiarism();
+      renderChapterProgress();
+      renderTaskBoard();
+      renderNotificationPrefs();
+      renderArchiveState();
+      renderCertificates();
+    }
+
+    function renderAnnouncements() {
+      const list = featuresData.announcements || [];
+      if (!list.length) {
+        el.announceList.innerHTML = `<p class="muted">No announcements yet.</p>`;
+      } else {
+        el.announceList.innerHTML = list.slice().reverse().map((a) => `
+          <div class="card" style="background:#0f1b34;">
+            <strong>${escapeHtml(a.title)}</strong>
+            <p class="muted small">${escapeHtml(a.date)}</p>
+            <p>${escapeHtml(a.body)}</p>
+          </div>
+        `).join("");
+      }
+      el.announceForm.classList.toggle("hidden", !canManageAcademicFlow());
+    }
+
+    function renderMeetings() {
+      const mine = (featuresData.meetings || []).filter((m) => currentUser.role === "supervisor" ? true : Number(m.studentId) === Number(currentUser.id));
+      if (!mine.length) {
+        el.meetingList.innerHTML = `<p class="muted">No meetings yet.</p>`;
+      } else {
+        el.meetingList.innerHTML = mine.slice().reverse().map((m) => `
+          <div class="card" style="background:#0f1b34;">
+            <strong>${escapeHtml(m.topic)}</strong> - ${escapeHtml(m.date)}<br />
+            <span class="muted">Status: ${escapeHtml(m.status)}</span>
+            ${canManageAcademicFlow() ? `
+            <div class="file-picker-row mt">
+              <button class="btn btn-ghost small" data-meeting-status="${m.id}:Approved">Approve</button>
+              <button class="btn btn-ghost small" data-meeting-status="${m.id}:Rejected">Reject</button>
+            </div>` : ""}
+          </div>
+        `).join("");
+      }
+    }
+
+    function renderDefense() {
+      const d = featuresData.defense;
+      if (!d) el.defenseView.textContent = "No defense scheduled yet.";
+      else el.defenseView.innerHTML = `<strong>Date:</strong> ${escapeHtml(d.date)}<br /><strong>Room/Link:</strong> ${escapeHtml(d.room)}`;
+      el.defenseForm.classList.toggle("hidden", !canManageAcademicFlow());
+    }
+
+    function renderPlagiarism() {
+      const key = String(currentUser?.id || "");
+      const p = (featuresData.plagiarism || {})[key];
+      el.plagView.innerHTML = p
+        ? `<strong>Report:</strong> ${escapeHtml(p.report)} | <strong>Similarity:</strong> ${escapeHtml(String(p.similarity))}% | <strong>Verified:</strong> ${p.verified ? "Yes" : "No"}`
+        : "No plagiarism report yet.";
+      el.plagForm.classList.toggle("hidden", !currentUser || currentUser.role !== "student");
+    }
+
+    function renderChapterProgress() {
+      if (!currentUser) return;
+      const key = String(currentUser.id);
+      if (!featuresData.chapterProgress[key]) featuresData.chapterProgress[key] = [0, 0, 0, 0, 0];
+      const arr = featuresData.chapterProgress[key];
+      el.chapterProgressWrap.innerHTML = arr.map((v, idx) => `
+        <label>Chapter ${idx + 1}: ${v}%
+          <input type="range" min="0" max="100" value="${v}" data-chapter-idx="${idx}" />
+        </label>
+      `).join("");
+    }
+
+    function renderTaskBoard() {
+      const tasks = featuresData.tasks || [];
+      const mk = (status) => tasks.filter((t) => t.status === status).map((t) => `
+        <div class="card" style="background:#0f1b34;">
+          ${escapeHtml(t.text)}
+          <div class="file-picker-row mt">
+            ${status !== "todo" ? `<button class="btn btn-ghost small" data-task-move="${t.id}:todo">To Do</button>` : ""}
+            ${status !== "doing" ? `<button class="btn btn-ghost small" data-task-move="${t.id}:doing">Doing</button>` : ""}
+            ${status !== "done" ? `<button class="btn btn-ghost small" data-task-move="${t.id}:done">Done</button>` : ""}
+          </div>
+        </div>
+      `).join("") || `<p class="muted">No tasks</p>`;
+      el.taskBoard.innerHTML = `
+        <div class="card"><h5>To Do</h5>${mk("todo")}</div>
+        <div class="card"><h5>Doing</h5>${mk("doing")}</div>
+        <div class="card"><h5>Done</h5>${mk("done")}</div>
+      `;
+    }
+
+    function renderNotificationPrefs() {
+      if (!currentUser) return;
+      const key = String(currentUser.id);
+      const p = featuresData.notifications[key] || { email: true, whatsapp: false, inapp: true };
+      el.notifEmail.checked = Boolean(p.email);
+      el.notifWhatsapp.checked = Boolean(p.whatsapp);
+      el.notifInApp.checked = Boolean(p.inapp);
+    }
+
+    function renderArchiveState() {
+      const on = Boolean(featuresData.archiveMode);
+      el.archiveToggle.checked = on;
+      el.archiveStatus.textContent = on ? "Archive mode is ON (read-only)." : "Archive mode is OFF.";
+      el.archiveSaveBtn.disabled = !canManageAcademicFlow();
+      el.archiveToggle.disabled = !canManageAcademicFlow();
+    }
+
+    function renderCertificates() {
+      const mineApproved = dissertations.filter((d) => Number(d.studentId) === Number(currentUser?.id) && d.status === "Approved").length;
+      el.generateCertBtn.disabled = !currentUser || currentUser.role !== "student" || mineApproved === 0;
+      const mine = (featuresData.certificates || []).filter((c) => Number(c.studentId) === Number(currentUser?.id));
+      el.certList.innerHTML = mine.length
+        ? mine.slice().reverse().map((c) => `<div class="card" style="background:#0f1b34;"><strong>Certificate</strong><br />${escapeHtml(c.date)}<br /><button class="btn btn-ghost small mt" data-cert-print="${c.id}">Print</button></div>`).join("")
+        : `<p class="muted">No certificates yet.</p>`;
     }
 
     function persistAll() {
       saveJSON(STORAGE_USERS_KEY, users);
       saveJSON(STORAGE_DISSERTATIONS_KEY, dissertations);
       saveJSON(STORAGE_SESSION_KEY, currentUser);
+      saveJSON(STORAGE_JOURNAL_KEY, journalEntries);
+      saveJSON(STORAGE_FEATURES_KEY, featuresData);
     }
 
-    function findOrCreateUser(role, name) {
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function findOrCreateUser(role, name, password = "", profile = {}) {
       const normalized = name.trim().toLowerCase();
       const pool = role === "student" ? users.students : users.supervisors;
       let user = pool.find((u) => u.name === normalized);
       if (!user) {
-        user = { id: Date.now() + Math.floor(Math.random() * 1000), name: normalized };
+        user = {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          name: normalized,
+          password: String(password),
+          email: String(profile.email || ""),
+          phone: String(profile.phone || "")
+        };
         pool.push(user);
       }
       return user;
     }
 
+    function findUser(role, name) {
+      const normalized = name.trim().toLowerCase();
+      const pool = role === "student" ? users.students : users.supervisors;
+      return pool.find((u) => u.name === normalized) || null;
+    }
+
+    function findUserByEmail(email) {
+      const normalized = String(email || "").trim().toLowerCase();
+      const allUsers = [...users.students, ...users.supervisors];
+      return allUsers.find((u) => String(u.email || "").toLowerCase() === normalized) || null;
+    }
+
+    function registerUser(role, name, password, profile = {}) {
+      const existing = findUser(role, name);
+      if (existing) return { ok: false, reason: "exists", user: null };
+      const user = findOrCreateUser(role, name, password, profile);
+      return { ok: true, reason: "created", user };
+    }
+
+    function loginUser(role, name, password) {
+      const user = findUser(role, name);
+      if (!user) return null;
+      if (String(user.password || "") !== String(password)) return null;
+      return user;
+    }
+
+    function ensureDefaultDemoUsers() {
+      if (!findUser("student", "ali")) findOrCreateUser("student", "ali", "1234");
+      if (!findUser("student", "sara")) findOrCreateUser("student", "sara", "1234");
+      const sup = findUser("supervisor", "dr_ahmed")
+        || findOrCreateUser("supervisor", "dr_ahmed", "admin", {
+          email: "dr_ahmed@university.edu",
+          phone: "+20 100 000 0000"
+        });
+      if (sup && !sup.email) sup.email = "dr_ahmed@university.edu";
+      if (sup && !sup.phone) sup.phone = "+20 100 000 0000";
+      // Keep only Mr Ahmed as supervisor account.
+      users.supervisors = users.supervisors.filter((s) => String(s.name || "").trim().toLowerCase() === "dr_ahmed");
+      saveJSON(STORAGE_USERS_KEY, users);
+    }
+
     function renderStudentTable() {
-      const myItems = dissertations.filter((d) => d.studentId === currentUser.id).sort((a, b) => b.version - a.version);
+      const sid = Number(currentUser.id);
+      const myItems = dissertations.filter((d) => Number(d.studentId) === sid).sort((a, b) => b.version - a.version);
+      const t = i18n[currentLang] || i18n.en;
       el.studentTableBody.innerHTML = myItems.map((item) => `
         <tr>
-          <td>${item.fileName}</td>
+          <td><button type="button" class="open-file-name" data-open-student-file="${item.id}" title="${escapeHtml(t.openFile)}">${escapeHtml(item.fileName)}</button></td>
           <td>V${item.version}</td>
-          <td class="status ${statusClass(item.status)}">${statusText(item.status)}</td>
+          <td class="status ${statusClass(item.status)}">${statusText(item.status)}${isSubmissionLate(item) ? ` • ${t.lateTag || i18n.en.lateTag}` : ""}</td>
           <td>${item.comment || "-"}</td>
           <td>${item.uploadDate}</td>
         </tr>
@@ -681,16 +1695,59 @@
       el.approvedCount.textContent = summary.approved;
     }
 
+    function renderSupervisorContacts() {
+      const t = i18n[currentLang] || i18n.en;
+      if (!el.supervisorContactsList) return;
+      const contacts = (users.supervisors || []).map((s) => ({
+        name: s.name || "supervisor",
+        email: s.email || "-",
+        phone: s.phone || "-",
+        emailValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s.email || "").trim()),
+        phoneRaw: String(s.phone || "").trim()
+      }));
+      if (!contacts.length) {
+        el.supervisorContactsList.textContent = t.noSupervisorContacts || i18n.en.noSupervisorContacts;
+        return;
+      }
+      el.supervisorContactsList.innerHTML = contacts.map((c) => `
+        <div style="padding:8px 0; border-bottom:1px solid rgba(148,163,184,.2);">
+          <strong>${escapeHtml(c.name)}</strong><br />
+          ${t.contactEmail || i18n.en.contactEmail}: ${escapeHtml(c.email)}<br />
+          ${t.contactPhone || i18n.en.contactPhone}: ${escapeHtml(c.phone)}
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${c.emailValid
+              ? `<a class="btn btn-ghost small" href="mailto:${escapeHtml(c.email)}">${t.contactEmailBtn || i18n.en.contactEmailBtn}</a>`
+              : ""}
+            ${c.emailValid
+              ? `<a class="btn btn-ghost small" href="https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(c.email)}" target="_blank" rel="noopener noreferrer">${t.contactGmailBtn || i18n.en.contactGmailBtn}</a>`
+              : ""}
+            ${c.phoneRaw
+              ? `<a class="btn btn-ghost small" href="tel:${escapeHtml(c.phoneRaw.replace(/\s+/g, ""))}">${t.contactCallBtn || i18n.en.contactCallBtn}</a>`
+              : ""}
+            ${c.phoneRaw
+              ? `<a class="btn btn-ghost small" href="https://wa.me/${escapeHtml(c.phoneRaw.replace(/[^0-9]/g, ""))}" target="_blank" rel="noopener noreferrer">${t.contactWhatsappBtn || i18n.en.contactWhatsappBtn}</a>`
+              : ""}
+            ${c.emailValid
+              ? `<button class="btn btn-ghost small" type="button" data-copy-email="${escapeHtml(c.email)}">${t.contactCopyEmailBtn || i18n.en.contactCopyEmailBtn}</button>`
+              : ""}
+            ${c.phoneRaw
+              ? `<button class="btn btn-ghost small" type="button" data-copy-phone="${escapeHtml(c.phoneRaw)}">${t.contactCopyPhoneBtn || i18n.en.contactCopyPhoneBtn}</button>`
+              : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+
     function renderSupervisorTable() {
       const filter = el.statusFilter.value;
       const items = dissertations.filter((d) => (filter === "all" ? true : d.status === filter)).sort((a, b) => b.id - a.id);
       el.supervisorTableBody.innerHTML = items.map((item) => {
-        const student = users.students.find((s) => s.id === item.studentId);
+        const student = users.students.find((s) => Number(s.id) === Number(item.studentId));
         const t = i18n[currentLang] || i18n.en;
         return `
           <tr>
             <td>${student ? student.name : t.unknown}</td>
-            <td>${item.fileName}</td>
+            <td><button type="button" class="open-file-name" data-open-student-file="${item.id}" title="${escapeHtml(t.openFile)}">${escapeHtml(item.fileName)}</button></td>
             <td>V${item.version}</td>
             <td class="status ${statusClass(item.status)}">${statusText(item.status)}</td>
             <td>${item.comment || "-"}</td>
@@ -703,6 +1760,12 @@
                   <option value="Needs Revision" ${item.status === "Needs Revision" ? "selected" : ""}>${t.statusNeedsRevision}</option>
                   <option value="Approved" ${item.status === "Approved" ? "selected" : ""}>${t.statusApproved}</option>
                 </select>
+                <p class="muted small" style="margin:0;">${t.supervisorAttachHint}</p>
+                <div class="file-picker-row">
+                  <input type="file" id="super-attach-${item.id}" class="super-attach-input file-input-native" data-attach-id="${item.id}" />
+                  <button type="button" class="btn btn-ghost small" data-browse-attach="${item.id}">${t.browseFile}</button>
+                  <span class="muted small" id="super-attach-name-${item.id}">${item.supervisorAttachmentName ? escapeHtml(item.supervisorAttachmentName) : "—"}</span>
+                </div>
                 <button class="btn btn-primary small" data-save-id="${item.id}">${t.save}</button>
               </div>
             </td>
@@ -719,7 +1782,20 @@
       el.studentBadge.textContent = guest ? t.badgeGuest : t.badgeStudent;
       el.guestReadOnly.classList.toggle("hidden", !guest);
       el.uploadBtn.disabled = guest;
-      el.fileName.disabled = guest;
+      el.projectFile.disabled = guest;
+      el.browseFileBtn.disabled = guest;
+      if (guest) el.projectFile.removeAttribute("required");
+      else el.projectFile.setAttribute("required", "");
+      el.resetWorkBtn.classList.toggle("hidden", guest);
+      el.resetWorkBtn.disabled = guest;
+      if (featuresData.archiveMode) {
+        el.uploadBtn.disabled = true;
+        el.projectFile.disabled = true;
+        el.browseFileBtn.disabled = true;
+      }
+      updateDeadlineInfo();
+      updateStudentFileDisplay();
+      renderSupervisorContacts();
       renderStudentTable();
     }
 
@@ -730,13 +1806,101 @@
       renderSupervisorTable();
     }
 
+    function renderJournalEntries() {
+      const t = i18n[currentLang] || i18n.en;
+      if (!currentUser) {
+        el.journalEntriesList.innerHTML = `<p class="muted">${t.toastJournalNeedLogin || i18n.en.toastJournalNeedLogin}</p>`;
+        return;
+      }
+      const uid = Number(currentUser.id);
+      const now = Date.now();
+      const mine = journalEntries
+        .filter((it) => Number(it.userId) === uid)
+        .filter((it) => {
+          const q = journalSearchQuery.trim().toLowerCase();
+          if (!q) return true;
+          const title = String(it.title || "").toLowerCase();
+          const body = String(it.body || "").toLowerCase();
+          return title.includes(q) || body.includes(q);
+        })
+        .filter((it) => {
+          if (journalDateFilterValue === "today") {
+            const d = new Date(Number(it.createdAtTs || 0));
+            const n = new Date(now);
+            return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+          }
+          if (journalDateFilterValue === "7d") {
+            const ts = Number(it.createdAtTs || 0);
+            return ts && ts >= (now - 7 * 24 * 60 * 60 * 1000);
+          }
+          return true;
+        })
+        .sort((a, b) => Number(b.id) - Number(a.id));
+      if (!mine.length) {
+        el.journalEntriesList.innerHTML = `<p class="muted">${t.journalEmpty || i18n.en.journalEmpty}</p>`;
+        return;
+      }
+      el.journalEntriesList.innerHTML = mine.map((it) => `
+        <div class="card" style="background:#0f1b34;">
+          <div class="card-head split" style="gap:10px;">
+            <strong>${escapeHtml(it.title || "Untitled entry")}</strong>
+            <button class="btn btn-ghost small btn-danger-outline" type="button" data-delete-journal-id="${it.id}">${t.journalDelete || i18n.en.journalDelete}</button>
+          </div>
+          <p class="muted small" style="margin:4px 0 10px;">${escapeHtml(it.createdAt || "")}</p>
+          <p style="white-space:pre-wrap; line-height:1.65; margin:0;">${escapeHtml(it.body || "")}</p>
+        </div>
+      `).join("");
+    }
+
+    function showJournalView() {
+      if (!currentUser) {
+        const t = i18n[currentLang] || i18n.en;
+        showToast(t.toastJournalNeedLogin || i18n.en.toastJournalNeedLogin);
+        openCurrentSession();
+        return;
+      }
+      resetViews();
+      el.journalView.classList.remove("hidden");
+      el.logoutBtn.classList.remove("hidden");
+      el.journalSearchInput.value = journalSearchQuery;
+      el.journalDateFilter.value = journalDateFilterValue;
+      renderJournalEntries();
+    }
+
+    function showSupervisorDetailsView() {
+      if (!currentUser || currentUser.role !== "student") {
+        openCurrentSession();
+        return;
+      }
+      resetViews();
+      el.supervisorDetailsView.classList.remove("hidden");
+      el.logoutBtn.classList.remove("hidden");
+      renderSupervisorContacts();
+    }
+
+    function showSignupView(seed = {}) {
+      resetViews();
+      el.signupView.classList.remove("hidden");
+      el.logoutBtn.classList.add("hidden");
+      el.journalBtn.classList.add("hidden");
+      if (seed.role) el.signupRole.value = seed.role;
+      if (seed.name) el.signupName.value = seed.name;
+      if (seed.password) el.signupPassword.value = seed.password;
+      if (seed.email) el.signupEmail.value = seed.email;
+      if (seed.phone) el.signupPhone.value = seed.phone;
+    }
+
     function openCurrentSession() {
       if (!currentUser) {
         resetViews();
         el.loginView.classList.remove("hidden");
         el.logoutBtn.classList.add("hidden");
+        el.journalBtn.classList.add("hidden");
+        el.featuresBtn.classList.add("hidden");
         return;
       }
+      el.journalBtn.classList.remove("hidden");
+      el.featuresBtn.classList.remove("hidden");
       if (currentUser.role === "student") showStudentDashboard();
       else showSupervisorDashboard();
     }
@@ -752,18 +1916,93 @@
       const role = (el.role.value || "student").toLowerCase();
       const name = el.name.value.trim();
       const password = el.password.value.trim();
+      const t = i18n[currentLang] || i18n.en;
       if (!name || !password) {
-        const t = i18n[currentLang] || i18n.en;
         showToast(t.toastMissingCreds);
         return;
       }
 
-      const user = findOrCreateUser(role === "supervisor" ? "supervisor" : "student", name);
+      const userRole = role === "supervisor" ? "supervisor" : "student";
+      const existingUser = findUser(userRole, name);
+      if (!existingUser) {
+        showToast(t.toastRedirectSignup || "Account not found. Please complete sign up first.");
+        showSignupView({ role: userRole, name, password });
+        return;
+      }
+      const user = loginUser(userRole, name, password);
+      if (!user) {
+        showToast(t.toastInvalidCreds || "Invalid username or password.");
+        return;
+      }
       currentUser = { id: user.id, name: user.name, role: role === "supervisor" ? "supervisor" : "student", isGuest: false };
       persistAll();
-      const t = i18n[currentLang] || i18n.en;
       showToast(t.toastLoginOk);
       openCurrentSession();
+    });
+
+    el.registerBtn.addEventListener("click", () => {
+      const role = (el.role.value || "student").toLowerCase();
+      const userRole = role === "supervisor" ? "supervisor" : "student";
+      const name = el.name.value.trim();
+      const password = el.password.value.trim();
+      showSignupView({ role: userRole, name, password });
+    });
+
+    el.signupForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const t = i18n[currentLang] || i18n.en;
+      const role = (el.signupRole.value || "student").toLowerCase();
+      const userRole = role === "supervisor" ? "supervisor" : "student";
+      const name = el.signupName.value.trim();
+      const email = el.signupEmail.value.trim();
+      const phone = el.signupPhone.value.trim();
+      const password = el.signupPassword.value.trim();
+      const confirmPassword = el.signupConfirmPassword.value.trim();
+      if (!name || !email || !phone || !password || !confirmPassword) {
+        showToast(t.toastSignupMissing || i18n.en.toastSignupMissing);
+        return;
+      }
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!emailOk) {
+        showToast(t.toastSignupEmailInvalid || i18n.en.toastSignupEmailInvalid);
+        return;
+      }
+      const phoneOk = /^[0-9+\-\s()]{7,20}$/.test(phone);
+      if (!phoneOk) {
+        showToast(t.toastSignupPhoneInvalid || i18n.en.toastSignupPhoneInvalid);
+        return;
+      }
+      if (password.length < 6) {
+        showToast(t.toastSignupPasswordWeak || i18n.en.toastSignupPasswordWeak);
+        return;
+      }
+      if (password !== confirmPassword) {
+        showToast(t.toastSignupPasswordMismatch || i18n.en.toastSignupPasswordMismatch);
+        return;
+      }
+      if (findUserByEmail(email)) {
+        showToast(t.toastEmailExists || i18n.en.toastEmailExists);
+        return;
+      }
+      const created = registerUser(userRole, name, password, { email, phone });
+      if (!created.ok) {
+        showToast(t.toastUserExists || "This username already exists for that role.");
+        return;
+      }
+      const user = created.user;
+      currentUser = { id: user.id, name: user.name, role: userRole, isGuest: false };
+      persistAll();
+      el.loginForm.reset();
+      el.signupForm.reset();
+      showToast(t.toastRegisterOk || "Account created. You can log in now.");
+      openCurrentSession();
+    });
+
+    el.signupBackBtn.addEventListener("click", () => {
+      resetViews();
+      el.loginView.classList.remove("hidden");
+      el.logoutBtn.classList.add("hidden");
+      el.journalBtn.classList.add("hidden");
     });
 
     el.guestBtn.addEventListener("click", () => {
@@ -775,43 +2014,155 @@
       openCurrentSession();
     });
 
+    el.browseFileBtn.addEventListener("click", () => {
+      if (el.projectFile.disabled) return;
+      el.projectFile.click();
+    });
+
+    el.projectFile.addEventListener("change", () => updateStudentFileDisplay());
+    el.journalSearchInput.addEventListener("input", () => {
+      journalSearchQuery = el.journalSearchInput.value || "";
+      renderJournalEntries();
+    });
+    el.journalDateFilter.addEventListener("change", () => {
+      journalDateFilterValue = el.journalDateFilter.value || "all";
+      renderJournalEntries();
+    });
+
     el.uploadForm.addEventListener("submit", (e) => {
       e.preventDefault();
       if (!currentUser || currentUser.role !== "student") return;
+      if (featuresData.archiveMode) {
+        showToast("Archive mode is enabled. Uploads are disabled.");
+        return;
+      }
       if (currentUser.isGuest) {
-        const t = i18n[currentLang] || i18n.en;
-        showToast(t.toastGuestRO);
+        const tg = i18n[currentLang] || i18n.en;
+        showToast(tg.toastGuestRO);
         return;
       }
 
-      const fileName = el.fileName.value.trim();
-      if (!fileName) return;
-      const myVersions = dissertations.filter((d) => d.studentId === currentUser.id).map((d) => d.version);
+      const picked = el.projectFile.files[0];
+      if (!picked) {
+        const tg = i18n[currentLang] || i18n.en;
+        showToast(tg.noFileChosen);
+        return;
+      }
+      const fileName = picked.name;
+      const myVersions = dissertations.filter((d) => Number(d.studentId) === Number(currentUser.id)).map((d) => d.version);
       const nextVersion = myVersions.length ? Math.max(...myVersions) + 1 : 1;
-      dissertations.push({ id: Date.now(), studentId: currentUser.id, fileName, version: nextVersion, status: "Pending", comment: "", uploadDate: nowDate() });
+      const newId = Date.now();
+      const row = {
+        id: newId,
+        studentId: currentUser.id,
+        fileName,
+        version: nextVersion,
+        status: "Pending",
+        comment: "",
+        uploadDate: nowDate(),
+        createdAtTs: Date.now(),
+        fileStored: false
+      };
+      dissertations.push(row);
       persistAll();
       renderStudentTable();
-      el.fileName.value = "";
+      el.projectFile.value = "";
+      updateStudentFileDisplay();
+
+      saveDissertationFile(newId, picked)
+        .then(() => {
+          row.fileStored = true;
+          persistAll();
+          renderStudentTable();
+          const tg = i18n[currentLang] || i18n.en;
+          showToast(tg.toastUploadOk);
+        })
+        .catch((err) => {
+          console.error(err);
+          const tg = i18n[currentLang] || i18n.en;
+          showToast(tg.toastFileOpenFailed);
+        });
+    });
+
+    el.studentTableBody.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-open-student-file]");
+      if (!btn) return;
+      e.preventDefault();
+      const id = Number(btn.getAttribute("data-open-student-file"));
+      openDissertationFileInBrowser(id);
+    });
+
+    el.resetWorkBtn.addEventListener("click", () => {
       const t = i18n[currentLang] || i18n.en;
-      showToast(t.toastUploadOk);
+      if (!currentUser || currentUser.role !== "student") return;
+      if (currentUser.isGuest) {
+        showToast(t.resetWorkGuest);
+        return;
+      }
+      const sid = Number(currentUser.id);
+      const mine = dissertations.filter((d) => Number(d.studentId) === sid);
+      if (!mine.length) {
+        showToast(t.resetWorkEmpty);
+        return;
+      }
+      if (!confirm(t.resetWorkConfirm)) return;
+      const ids = mine.map((d) => Number(d.id));
+      dissertations = dissertations.filter((d) => Number(d.studentId) !== sid);
+      persistAll();
+      deleteDissertationFilesFromIdb(ids)
+        .catch((err) => console.error(err))
+        .finally(() => {
+          renderStudentTable();
+          showToast(t.resetWorkDone);
+        });
     });
 
     el.statusFilter.addEventListener("change", renderSupervisorTable);
 
     el.supervisorTableBody.addEventListener("click", (e) => {
+      const openFileBtn = e.target.closest("[data-open-student-file]");
+      if (openFileBtn) {
+        e.preventDefault();
+        const id = Number(openFileBtn.getAttribute("data-open-student-file"));
+        openDissertationFileInBrowser(id);
+        return;
+      }
+      const browse = e.target.closest("button[data-browse-attach]");
+      if (browse) {
+        const sid = browse.getAttribute("data-browse-attach");
+        document.getElementById(`super-attach-${sid}`)?.click();
+        return;
+      }
       const btn = e.target.closest("button[data-save-id]");
       if (!btn) return;
+      if (featuresData.archiveMode) {
+        showToast("Archive mode is enabled. Reviews are read-only.");
+        return;
+      }
       const itemId = Number(btn.dataset.saveId);
-      const item = dissertations.find((d) => d.id === itemId);
+      const item = dissertations.find((d) => Number(d.id) === itemId);
       if (!item) return;
       const selectedStatus = document.getElementById(`status-${itemId}`)?.value;
       const comment = document.getElementById(`comment-${itemId}`)?.value.trim();
+      const attInput = document.getElementById(`super-attach-${itemId}`);
+      if (attInput && attInput.files && attInput.files[0]) {
+        item.supervisorAttachmentName = attInput.files[0].name;
+      }
       item.status = selectedStatus || item.status;
       item.comment = comment || "";
       persistAll();
       renderSupervisorTable();
       const t = i18n[currentLang] || i18n.en;
       showToast(t.toastUpdated);
+    });
+
+    el.supervisorTableBody.addEventListener("change", (e) => {
+      const inp = e.target;
+      if (!inp || !inp.classList.contains("super-attach-input")) return;
+      const sid = inp.getAttribute("data-attach-id");
+      const nameEl = document.getElementById(`super-attach-name-${sid}`);
+      const f = inp.files[0];
+      if (nameEl) nameEl.textContent = f ? f.name : (dissertations.find((d) => String(d.id) === String(sid))?.supervisorAttachmentName || "—");
     });
 
     el.logoutBtn.addEventListener("click", () => {
@@ -827,6 +2178,225 @@
       openCurrentSession();
     });
 
+    el.featuresBtn.addEventListener("click", () => {
+      showFeaturesView();
+    });
+
+    el.featuresBackBtn.addEventListener("click", () => {
+      openCurrentSession();
+    });
+
+    el.journalBtn.addEventListener("click", () => {
+      showJournalView();
+    });
+
+    el.openSupervisorDetailsBtn.addEventListener("click", () => {
+      showSupervisorDetailsView();
+    });
+
+    el.supervisorDetailsBackBtn.addEventListener("click", () => {
+      openCurrentSession();
+    });
+
+    el.supervisorContactsList.addEventListener("click", async (e) => {
+      const copyEmailBtn = e.target.closest("[data-copy-email]");
+      const copyPhoneBtn = e.target.closest("[data-copy-phone]");
+      if (!copyEmailBtn && !copyPhoneBtn) return;
+      const t = i18n[currentLang] || i18n.en;
+      const value = copyEmailBtn
+        ? (copyEmailBtn.getAttribute("data-copy-email") || "")
+        : (copyPhoneBtn.getAttribute("data-copy-phone") || "");
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        showToast(t.toastCopied || i18n.en.toastCopied);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    el.themeToggleBtn.addEventListener("click", () => {
+      featuresData.theme = (featuresData.theme === "light") ? "dark" : "light";
+      document.body.classList.toggle("theme-light", featuresData.theme === "light");
+      persistAll();
+    });
+
+    el.announceForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!canManageAcademicFlow()) return;
+      const title = (el.announceTitle.value || "").trim();
+      const body = (el.announceBody.value || "").trim();
+      if (!title || !body) return;
+      featuresData.announcements.push({ id: Date.now(), title, body, date: nowDate() });
+      el.announceForm.reset();
+      persistAll();
+      renderAnnouncements();
+    });
+
+    el.meetingForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!currentUser || currentUser.role !== "student") return;
+      const date = (el.meetingDate.value || "").trim();
+      const topic = (el.meetingTopic.value || "").trim();
+      if (!date || !topic) return;
+      featuresData.meetings.push({ id: Date.now(), studentId: Number(currentUser.id), date, topic, status: "Pending" });
+      el.meetingForm.reset();
+      persistAll();
+      renderMeetings();
+    });
+
+    el.meetingList.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-meeting-status]");
+      if (!btn || !canManageAcademicFlow()) return;
+      const [idRaw, status] = String(btn.getAttribute("data-meeting-status") || "").split(":");
+      const id = Number(idRaw);
+      const m = featuresData.meetings.find((x) => Number(x.id) === id);
+      if (!m) return;
+      m.status = status;
+      persistAll();
+      renderMeetings();
+    });
+
+    el.defenseForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!canManageAcademicFlow()) return;
+      const date = (el.defenseDate.value || "").trim();
+      const room = (el.defenseRoom.value || "").trim();
+      if (!date || !room) return;
+      featuresData.defense = { date, room };
+      persistAll();
+      renderDefense();
+    });
+
+    el.runChecklistBtn.addEventListener("click", () => {
+      const text = String(el.checklistText.value || "");
+      const checks = [
+        { label: "Has Abstract", ok: /abstract/i.test(text) },
+        { label: "Has Methodology", ok: /method/i.test(text) },
+        { label: "Has Conclusion", ok: /conclusion/i.test(text) },
+        { label: "Has References", ok: /reference/i.test(text) },
+        { label: "Length >= 150 words", ok: text.trim().split(/\s+/).filter(Boolean).length >= 150 }
+      ];
+      el.checklistResult.innerHTML = checks.map((c) => `${c.ok ? "✓" : "✗"} ${c.label}`).join("<br />");
+    });
+
+    el.plagForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!currentUser || currentUser.role !== "student") return;
+      const report = (el.plagReportName.value || "").trim();
+      const similarity = Number(el.plagSimilarity.value || 0);
+      if (!report) return;
+      featuresData.plagiarism[String(currentUser.id)] = { report, similarity, verified: similarity <= 20 };
+      persistAll();
+      renderPlagiarism();
+    });
+
+    el.chapterProgressWrap.addEventListener("input", (e) => {
+      const slider = e.target.closest("[data-chapter-idx]");
+      if (!slider || !currentUser) return;
+      const idx = Number(slider.getAttribute("data-chapter-idx"));
+      const key = String(currentUser.id);
+      if (!featuresData.chapterProgress[key]) featuresData.chapterProgress[key] = [0, 0, 0, 0, 0];
+      featuresData.chapterProgress[key][idx] = Number(slider.value || 0);
+      persistAll();
+      renderChapterProgress();
+    });
+
+    el.taskForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = (el.taskInput.value || "").trim();
+      if (!text) return;
+      featuresData.tasks.push({ id: Date.now(), text, status: "todo" });
+      el.taskInput.value = "";
+      persistAll();
+      renderTaskBoard();
+    });
+
+    el.taskBoard.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-task-move]");
+      if (!btn) return;
+      const [idRaw, status] = String(btn.getAttribute("data-task-move") || "").split(":");
+      const task = featuresData.tasks.find((t) => Number(t.id) === Number(idRaw));
+      if (!task) return;
+      task.status = status;
+      persistAll();
+      renderTaskBoard();
+    });
+
+    el.notifSaveBtn.addEventListener("click", () => {
+      if (!currentUser) return;
+      featuresData.notifications[String(currentUser.id)] = {
+        email: Boolean(el.notifEmail.checked),
+        whatsapp: Boolean(el.notifWhatsapp.checked),
+        inapp: Boolean(el.notifInApp.checked)
+      };
+      persistAll();
+      showToast("Notification preferences saved.");
+    });
+
+    el.archiveSaveBtn.addEventListener("click", () => {
+      if (!canManageAcademicFlow()) return;
+      featuresData.archiveMode = Boolean(el.archiveToggle.checked);
+      persistAll();
+      renderArchiveState();
+      showToast(featuresData.archiveMode ? "Archive mode enabled." : "Archive mode disabled.");
+    });
+
+    el.generateCertBtn.addEventListener("click", () => {
+      if (!currentUser || currentUser.role !== "student") return;
+      const approvedCount = dissertations.filter((d) => Number(d.studentId) === Number(currentUser.id) && d.status === "Approved").length;
+      if (!approvedCount) return;
+      featuresData.certificates.push({ id: Date.now(), studentId: Number(currentUser.id), date: nowDate(), approvedCount });
+      persistAll();
+      renderCertificates();
+    });
+
+    el.certList.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-cert-print]");
+      if (!btn) return;
+      window.print();
+    });
+
+    el.journalBackBtn.addEventListener("click", () => {
+      openCurrentSession();
+    });
+
+    el.journalForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const t = i18n[currentLang] || i18n.en;
+      if (!currentUser) {
+        showToast(t.toastJournalNeedLogin || i18n.en.toastJournalNeedLogin);
+        return;
+      }
+      const title = (el.journalTitleInput.value || "").trim();
+      const body = (el.journalBodyInput.value || "").trim();
+      if (!title && !body) return;
+      journalEntries.push({
+        id: Date.now(),
+        userId: Number(currentUser.id),
+        title: title || "Untitled entry",
+        body,
+        createdAt: nowDate(),
+        createdAtTs: Date.now()
+      });
+      persistAll();
+      el.journalForm.reset();
+      renderJournalEntries();
+      showToast(t.toastJournalSaved || i18n.en.toastJournalSaved);
+    });
+
+    el.journalEntriesList.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-delete-journal-id]");
+      if (!btn) return;
+      const id = Number(btn.getAttribute("data-delete-journal-id"));
+      if (!id) return;
+      journalEntries = journalEntries.filter((it) => Number(it.id) !== id);
+      persistAll();
+      renderJournalEntries();
+      const t = i18n[currentLang] || i18n.en;
+      showToast(t.toastJournalDeleted || i18n.en.toastJournalDeleted);
+    });
+
     el.aboutLink.addEventListener("click", () => {
       showAboutView();
     });
@@ -835,11 +2405,15 @@
       openCurrentSession();
     });
 
-    el.langEN.addEventListener("click", () => applyLanguage("en"));
-    el.langAR.addEventListener("click", () => applyLanguage("ar"));
-    el.langTA.addEventListener("click", () => applyLanguage("ta"));
+    el.langSelect.addEventListener("change", () => {
+      applyLanguage(el.langSelect.value);
+    });
 
+    ensureDefaultDemoUsers();
+    document.body.classList.toggle("theme-light", featuresData.theme === "light");
     applyLanguage(currentLang);
+    updateDeadlineInfo();
+    setInterval(updateDeadlineInfo, 60000);
     openCurrentSession();
   </script>
 </body>
