@@ -44,5 +44,8 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    die('Database connection failed: ' . $e->getMessage());
+    // Keep connection details out of browser responses; log the diagnostic server-side.
+    error_log('[Dissertation System] Database connection failed: ' . $e->getMessage());
+    http_response_code(500);
+    exit('The application could not connect to the database. Check the server configuration and logs.');
 }

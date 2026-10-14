@@ -11,8 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $id = (int)($_POST['id'] ?? 0);
 $status = $_POST['status'] ?? '';
-$comment = trim($_POST['comment'] ?? '');
+$comment = substr(trim(strip_tags($_POST['comment'] ?? '')), 0, 2000);
 
+// Pending is the initial state; supervisors may move a submission to one of these review states.
 $allowedStatuses = ['Under Review', 'Needs Revision', 'Approved'];
 if ($id <= 0 || !in_array($status, $allowedStatuses, true)) {
     header('Location: supervisor.php?msg=Invalid review data');

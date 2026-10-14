@@ -6,7 +6,6 @@ requireRole('student');
 
 $message = $_GET['msg'] ?? '';
 $studentId = (int)$_SESSION['user_id'];
-$isGuest = isGuest();
 
 $stmt = $pdo->prepare('SELECT * FROM dissertations WHERE student_id = :student_id ORDER BY version DESC');
 $stmt->execute(['student_id' => $studentId]);
@@ -20,15 +19,16 @@ foreach ($items as $item) {
     if ($item['status'] === 'Approved') $stats['approved']++;
 }
 
-function statusClass(string $status): string
+function statusBadge(string $status): string
 {
-    return match ($status) {
-        'Pending' => 'pending',
-        'Under Review' => 'under-review',
-        'Needs Revision' => 'needs-revision',
-        'Approved' => 'approved',
-        default => 'pending'
+    $class = match ($status) {
+        'Pending' => 'status-badge--pending',
+        'Under Review' => 'status-badge--under-review',
+        'Needs Revision' => 'status-badge--needs-revision',
+        'Approved' => 'status-badge--approved',
+        default => 'status-badge--pending',
     };
+    return '<span class="status-badge ' . $class . '">' . h($status) . '</span>';
 }
 ?>
 <!doctype html>
@@ -36,7 +36,7 @@ function statusClass(string $status): string
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Dashboard</title>
+  <title>Student Dashboard — PG Dissertation Management</title>
   <link rel="stylesheet" href="web.css">
 </head>
 <body>
@@ -46,45 +46,39 @@ function statusClass(string $status): string
       <h1 class="title">Student Dashboard</h1>
       <p class="muted">Welcome, <?= h($_SESSION['name']) ?></p>
     </div>
-    <a class="btn btn-ghost" href="logout.php">Logout</a>
+    <a class="btn btn-ghost" href="logout.php">Sign Out</a>
   </header>
 
   <?php if ($message): ?>
-    <div class="alert success"><?= h($message) ?></div>
+    <div class="alert <?= str_contains(strtolower($message), 'fail') || str_contains(strtolower($message), 'invalid') || str_contains(strtolower($message), 'exceed') || str_contains(strtolower($message), 'only') ? 'error' : 'success' ?>" role="alert"><?= h($message) ?></div>
   <?php endif; ?>
 
   <section class="grid grid-2">
     <article class="card">
       <h2>Upload New Version</h2>
-      <?php if ($isGuest): ?>
-        <div class="alert error" style="margin-top:10px;">
-          Guest mode is read-only. Login with a regular student account to upload files.
-        </div>
-      <?php else: ?>
-        <p class="muted" style="margin:6px 0 12px;">You can upload any file type.</p>
-        <form method="post" action="upload.php" enctype="multipart/form-data">
-          <label>Choose file
-            <input type="file" name="dissertation_file" required>
-          </label>
-          <button type="submit">Upload</button>
-        </form>
-      <?php endif; ?>
+      <p class="muted" style="margin:8px 0 16px;">Submit a new dissertation version in PDF or DOCX format. Maximum file size: 25 MB.</p>
+      <form method="post" action="upload.php" enctype="multipart/form-data">
+        <label for="dissertation_file">Dissertation File
+          <input id="dissertation_file" type="file" name="dissertation_file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required aria-required="true">
+        </label>
+        <button type="submit">Upload</button>
+      </form>
     </article>
 
     <article class="card">
-      <h2>Progress</h2>
-      <div class="stats" style="margin-top:12px;">
+      <h2>My Progress</h2>
+      <div class="stats" style="margin-top:14px;">
         <div class="stat"><p class="muted">Total</p><h3><?= $stats['total'] ?></h3></div>
         <div class="stat"><p class="muted">Pending</p><h3><?= $stats['pending'] ?></h3></div>
-        <div class="stat"><p class="muted">Needs Revision</p><h3><?= $stats['revision'] ?></h3></div>
+        <div class="stat"><p class="muted">Revision Required</p><h3><?= $stats['revision'] ?></h3></div>
         <div class="stat"><p class="muted">Approved</p><h3><?= $stats['approved'] ?></h3></div>
       </div>
     </article>
   </section>
 
-  <section class="card" style="margin-top:14px;">
+  <section class="card" style="margin-top:18px;">
     <h2>My Submissions</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" style="margin-top:14px;">
       <table>
         <thead>
           <tr>
@@ -96,21 +90,35 @@ function statusClass(string $status): string
           </tr>
         </thead>
         <tbody>
+        <?php if (!$items): ?>
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <h3 style="margin:0 0 6px;color:var(--text);">No submissions yet</h3>
+                <p style="margin:0;">Upload your first dissertation version to begin the review process.</p>
+              </div>
+            </td>
+          </tr>
+        <?php else: ?>
         <?php foreach ($items as $item): ?>
           <tr>
             <td>
               <a class="file-link" href="download.php?id=<?= (int)$item['id'] ?>" target="_blank" rel="noopener" title="Open your file"><?= h($item['file_name']) ?></a>
             </td>
             <td>V<?= (int)$item['version'] ?></td>
-            <td class="status <?= statusClass($item['status']) ?>"><?= h($item['status']) ?></td>
-            <td><?= h($item['comment']) ?: '-' ?></td>
+            <td><?= statusBadge((string)$item['status']) ?></td>
+            <td><?= h($item['comment']) ?: '—' ?></td>
             <td><?= h((string)$item['upload_date']) ?></td>
           </tr>
         <?php endforeach; ?>
+        <?php endif; ?>
         </tbody>
       </table>
     </div>
   </section>
 </main>
+<footer class="site-footer">
+  <p>© 2026 Team Feshata. All rights reserved.</p>
+</footer>
 </body>
 </html>

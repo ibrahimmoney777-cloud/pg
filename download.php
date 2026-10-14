@@ -26,6 +26,7 @@ if (!$row) {
     exit('Not found');
 }
 
+// Authorize against the database owner before exposing any file bytes.
 $role = $_SESSION['role'] ?? '';
 $sessionUserId = (int)($_SESSION['user_id'] ?? 0);
 $ownerId = (int)$row['student_id'];

@@ -178,7 +178,7 @@ el.loginForm.addEventListener("submit", (e) => {
   const user = login(role, el.name.value, el.password.value);
 
   if (!user) {
-    showToast("Invalid credentials. Try demo accounts.");
+    showToast("Invalid username or password.");
     return;
   }
 
